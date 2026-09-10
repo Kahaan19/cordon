@@ -25,10 +25,14 @@ RAW_CSV_PATH = RAW_DIR / "twcs.csv"
 LLM_CACHE_PATH = CACHE_DIR / "llm_cache.sqlite"
 
 # --- models --------------------------------------------------------------
-# DECISION: gemini-flash-latest is the current free-tier Flash alias per
-# aistudio.google.com/apikey as of the last time this was checked. Re-verify before a long run —
-# free-tier model IDs and limits move.
-GEN_MODEL = "gemini-flash-latest"
+# DECISION: gemini-flash-latest now resolves to gemini-3.8-flash, a newest-tier flagship preview
+# whose free tier is a 20-requests-PER-DAY cap (confirmed live via a 429 RESOURCE_EXHAUSTED
+# error naming that exact quota) -- not viable for a ~30-call taxonomy induction, let alone the
+# rest of the pipeline. gemini-2.5-flash/-flash-lite are fully retired (404 for new users).
+# gemini-3.5-flash-lite is live and current; picked as the lighter, still-"Flash"-family tier
+# most likely to carry a real free daily quota. Re-verify before a long run -- free-tier model
+# IDs and limits move. See docs/DECISION_LOG.md #23.
+GEN_MODEL = "gemini-3.5-flash-lite"
 JUDGE_MODEL = "qwen3:8b"
 OLLAMA_HOST_DEFAULT = "http://localhost:11434"
 
@@ -91,3 +95,17 @@ AUDIT_TOPIC_KMEANS_K = 20
 AUDIT_TOPIC_SAMPLE_SIZE = 2000  # DECISION: cap per-brand sample for the audit's topic_entropy
 # KMeans so 15 brands run in seconds, not minutes. This is a descriptive stat, not part of
 # answerability_score, so it doesn't need the full corpus.
+
+# --- chosen brand (Phase 1 output) ---------------------------------------
+CHOSEN_BRAND = "hulu_support"  # picked by brand_audit.py; see docs/DECISION_LOG.md #1
+
+# --- embeddings ------------------------------------------------------------
+# DECISION: BAAI/bge-small-en-v1.5, fixed project-wide (BUILD_SPEC.md §2). Cited in CITATIONS.md.
+BGE_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
+# --- taxonomy induction (Phase 2) ------------------------------------------
+TAXONOMY_SAMPLE_SIZE = 4000
+TAXONOMY_KMEANS_K = 30
+TAXONOMY_STABILITY_SEEDS = [1, 2]
+TAXONOMY_STABILITY_KS = [24, 36]

@@ -1,0 +1,236 @@
+brand: hulu_support
+intents:
+- id: account_login_access
+  name: Account Login Access
+  definition: Customers seeking assistance with login issues, password resets, account
+    access, or suspected account compromises.
+  include: Messages where the user states they cannot log in, need password assistance,
+    or are experiencing account access errors.
+  exclude: General billing or subscription payment disputes go to billing_inquiry
+    instead of account access.
+  positive_examples:
+  - '273347'
+  - '1727386'
+  - '2244365'
+  near_miss_examples:
+  - tweet_id: '2098866'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '54656'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+- id: ads_on_ad_free_plan
+  name: Ads On Ad Free Plan
+  definition: Customers complaining about seeing commercials despite paying for an
+    ad-free subscription plan.
+  include: Messages must express confusion or frustration about experiencing advertisements
+    while subscribed to a commercial-free tier.
+  exclude: General billing disputes about subscription prices belong in billing_dispute
+    unless specifically complaining about commercials on an ad-free plan.
+  positive_examples:
+  - '249527'
+  - '1246330'
+  - '775936'
+  near_miss_examples:
+  - tweet_id: '1714677'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '775195'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+- id: app_bugs_and_ui_complaints
+  name: App Bugs And Ui Complaints
+  definition: Customer complaints, frustration, and negative feedback regarding app
+    bugs, navigation difficulties, performance glitches, watchlist sync errors, and
+    unpopular user interface redesigns across various devices.
+  include: Messages must explicitly mention technical malfunctions, crashes, buffering,
+    freezing, loading errors, poor user interface design, layout updates, or watchlist
+    synchronization problems on any device.
+  exclude: 'Messages strictly about billing disputes, account management, unwanted
+    subscription charges, or specific technical troubleshooting requests belong in
+    billing_dispute or technical_support instead. | Ambiguous boundary: cluster 23
+    ("technical_issues_and_complaints", mentions buffering and freezing) was merged
+    here rather than into playback_streaming_failure because its LLM-generated definition
+    leads with app malfunction/UI dissatisfaction. Likely a source of annotation disagreement.
+
+    '
+  positive_examples:
+  - '207818'
+  - '822963'
+  - '1304516'
+  near_miss_examples:
+  - tweet_id: '2338141'
+    reason: closest non-member by embedding distance; labelled 'live_tv_streaming_failure'
+      instead
+  - tweet_id: '1928572'
+    reason: closest non-member by embedding distance; labelled 'live_tv_streaming_failure'
+      instead
+- id: customer_service_complaint
+  name: Customer Service Complaint
+  definition: Customers complaining about long wait times, unhelpful agents, or difficulty
+    reaching customer support.
+  include: Tweets expressing frustration with customer service channels, long hold
+    times, unresponsive chat agents, or getting disconnected.
+  exclude: Tweets concerning specific billing errors or technical playback issues
+    should go to their respective functional intents instead of general customer service
+    complaints.
+  positive_examples:
+  - '773303'
+  - '376770'
+  - '372056'
+  near_miss_examples:
+  - tweet_id: '268503'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '1287461'
+    reason: closest non-member by embedding distance; labelled 'subscription_billing_refund'
+      instead
+- id: live_sports_streaming_issues
+  name: Live Sports Streaming Issues
+  definition: Customers experiencing technical problems, freezing, buffering, looping,
+    errors, or playback failures specifically while trying to watch live sporting
+    events and broadcasts.
+  include: Messages must report technical difficulties, streaming failures, service
+    outages, or playback errors while attempting to watch a live sports game, tournament,
+    or playoff event.
+  exclude: Messages about general VOD playback issues, app loading errors, or app
+    crashes not related to live sports broadcasts belong in general technical support
+    or playback error clusters instead.
+  positive_examples:
+  - '1825235'
+  - '2449984'
+  - '205884'
+  near_miss_examples:
+  - tweet_id: '2570594'
+    reason: closest non-member by embedding distance; labelled 'live_tv_streaming_failure'
+      instead
+  - tweet_id: '2263588'
+    reason: closest non-member by embedding distance; labelled 'playback_streaming_failure'
+      instead
+- id: live_tv_signup_or_access
+  name: Live Tv Signup Or Access
+  definition: Customers seeking assistance with subscribing to, activating, troubleshooting,
+    accessing, or using Hulu + Live TV features and channels across various devices.
+  include: Messages must explicitly mention Hulu with Live TV or live channels, asking
+    for help with setup, device compatibility, streaming, accessing, or plan upgrades
+    related to the live service.
+  exclude: Messages focusing solely on general standard Hulu streaming, playback errors,
+    or on-demand issues without any mention of Live TV belong in standard playback
+    or general technical support instead.
+  positive_examples:
+  - '2257778'
+  - '961066'
+  - '2605444'
+  near_miss_examples:
+  - tweet_id: '2106607'
+    reason: closest non-member by embedding distance; labelled 'playback_streaming_failure'
+      instead
+  - tweet_id: '854652'
+    reason: closest non-member by embedding distance; labelled 'playback_streaming_failure'
+      instead
+- id: live_tv_streaming_failure
+  name: Live Tv Streaming Failure
+  definition: Customers reporting constant buffering, lagging, poor video quality,
+    or playback failures specifically while watching Hulu Live TV broadcasts.
+  include: Messages must mention streaming issues such as constant buffering, skipping,
+    loading problems, poor picture quality, or playback failures while watching live
+    TV programming.
+  exclude: General video playback issues on on-demand content go to general playback
+    errors, and general app crashes or login issues unrelated to live streaming performance
+    belong in the general app troubleshooting cluster instead.
+  positive_examples:
+  - '1480856'
+  - '1487240'
+  - '2498143'
+  near_miss_examples:
+  - tweet_id: '1508226'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '818568'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+- id: missing_or_upcoming_content
+  name: Missing Or Upcoming Content
+  definition: Customers inquiring about, requesting, or reporting missing specific
+    episodes, seasons, shows, movies, networks, or international content that are
+    not currently available or updated on the platform.
+  include: Messages must ask about the release date, absence, delayed upload, or request
+    the addition of specific movies, TV show seasons, episodes, networks, or international
+    access.
+  exclude: Messages reporting technical playback issues, app errors, or general streaming
+    performance belong in technical_issues because those involve troubleshooting rather
+    than catalog availability.
+  positive_examples:
+  - '1690129'
+  - '1480863'
+  - '2378840'
+  near_miss_examples:
+  - tweet_id: '724799'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '1520195'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+- id: other
+  name: Other
+  definition: Doesn't fit a named intent -- junk, off-topic, or too mixed to resolve.
+  include: Not covered by another intent's inclusion criteria.
+  exclude: None -- this is the residual bucket.
+  positive_examples:
+  - '2409182'
+  - '1466494'
+  - '1303094'
+  near_miss_examples:
+  - tweet_id: '1522277'
+    reason: closest non-member by embedding distance; labelled 'missing_or_upcoming_content'
+      instead
+  - tweet_id: '2157355'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+- id: playback_streaming_failure
+  name: Playback Streaming Failure
+  definition: Customers reporting general streaming failures, technical difficulties,
+    video playback errors, and service outages preventing them from watching shows
+    or live TV.
+  include: A message belongs here if the customer is reporting playback problems,
+    app crashes, freezing, error messages, loading failures, or inquiring if the service
+    is down.
+  exclude: 'Messages should go to billing_dispute or account_management instead if
+    the primary complaint is about subscription charges, payment failures, login issues,
+    password resets, or missing content rather than technical streaming problems.
+    | Ambiguous boundary: cluster 16 (generic "technical_difficulties", no explicit
+    device/UI complaint) was merged here rather than into app_bugs_and_ui_complaints
+    because its cluster siblings (8, 19, 28) all reference active watching. Likely
+    a source of annotation disagreement.
+
+    '
+  positive_examples:
+  - '1082505'
+  - '1036831'
+  - '39093'
+  near_miss_examples:
+  - tweet_id: '1767268'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '2498387'
+    reason: closest non-member by embedding distance; labelled 'live_tv_streaming_failure'
+      instead
+- id: subscription_billing_refund
+  name: Subscription Billing Refund
+  definition: Customers requesting a refund due to unwanted charges after cancellation
+    or free trials.
+  include: The tweet must explicitly mention an unwanted charge or billing after cancellation/free
+    trial and request a refund or money back.
+  exclude: General subscription cancellation requests without a dispute over charges
+    or a demand for a refund belong in account_cancellation.
+  positive_examples:
+  - '59941'
+  - '1458889'
+  - '1752195'
+  near_miss_examples:
+  - tweet_id: '1021897'
+    reason: closest non-member by embedding distance; labelled 'app_bugs_and_ui_complaints'
+      instead
+  - tweet_id: '773303'
+    reason: closest non-member by embedding distance; labelled 'customer_service_complaint'
+      instead

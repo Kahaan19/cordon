@@ -24,6 +24,14 @@ load_dotenv()
 console = Console()
 
 
+PROMPTS_DIR = Path(__file__).parent / "prompts"
+
+
+def load_prompt(name: str) -> str:
+    """Prompts live as readable markdown in src/cordon/prompts/, never inlined (CLAUDE.md style)."""
+    return (PROMPTS_DIR / f"{name}.md").read_text()
+
+
 class CacheMiss(Exception):
     """Raised instead of calling any API when CORDON_OFFLINE=1 and the exact call isn't cached."""
 
@@ -88,43 +96,51 @@ def _cache_put(conn: sqlite3.Connection, key: str, model: str, text: str, parsed
 
 class GeminiBackend:
     """Free-tier Gemini. 429s are expected (BUILD_SPEC.md §2, CLAUDE.md rule 3a) — retry with
-    exponential backoff rather than surfacing them as pipeline failures."""
+    exponential backoff rather than surfacing them as pipeline failures. 503s (transient
+    server-side overload, observed in practice on gemini-flash-latest) get the same treatment:
+    both are "the server is busy," neither is a pipeline bug."""
 
-    MAX_RETRIES = 5
+    MAX_RETRIES = 10
+    RETRYABLE_MARKERS = ("429", "503", "UNAVAILABLE", "RESOURCE_EXHAUSTED")
 
     def generate(self, prompt: str, system: str, temperature: float, max_tokens: int,
                  schema: dict | None, model: str) -> tuple[str, dict | None, int, int]:
-        import google.generativeai as genai
+        # DECISION: google-generativeai is dead ("all support has ended", per its own
+        # deprecation warning) and its auth path no longer works reliably against the current
+        # API — migrated to google-genai. See docs/DECISION_LOG.md.
+        from google import genai
+        from google.genai import types
 
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY not set — required for a live Gemini call")
-        genai.configure(api_key=api_key)
+        client = genai.Client(api_key=api_key)
 
-        generation_config: dict = {"temperature": temperature, "max_output_tokens": max_tokens}
+        config = types.GenerateContentConfig(temperature=temperature, max_output_tokens=max_tokens,
+                                              system_instruction=system or None)
         if schema is not None:
-            generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = schema
-
-        gm = genai.GenerativeModel(model, system_instruction=system or None)
+            config.response_mime_type = "application/json"
+            config.response_schema = schema
 
         for attempt in range(self.MAX_RETRIES):
             try:
-                response = gm.generate_content(prompt, generation_config=generation_config)
+                response = client.models.generate_content(model=model, contents=prompt, config=config)
                 break
             except Exception as exc:  # DECISION: broad catch is deliberate here — the google
-                # SDK raises different exception types across versions for the same 429 condition,
-                # and every one of them must retry, never surface as a pipeline failure (rule 3a).
-                if "429" not in str(exc) or attempt == self.MAX_RETRIES - 1:
+                # SDK raises different exception types across versions for the same transient
+                # condition, and every one of them must retry, never surface as a pipeline
+                # failure (rule 3a).
+                retryable = any(marker in str(exc) for marker in self.RETRYABLE_MARKERS)
+                if not retryable or attempt == self.MAX_RETRIES - 1:
                     raise
                 wait = min(2 ** attempt, 60)
-                console.log(f"[yellow]Gemini 429, retry {attempt + 1}/{self.MAX_RETRIES} "
-                            f"in {wait}s[/yellow]")
+                console.log(f"[yellow]Gemini transient error, retry {attempt + 1}/"
+                            f"{self.MAX_RETRIES} in {wait}s[/yellow]")
                 time.sleep(wait)
 
         text = response.text
         parsed = json.loads(text) if schema is not None else None
-        usage = getattr(response, "usage_metadata", None)
+        usage = response.usage_metadata
         input_tokens = getattr(usage, "prompt_token_count", 0) or 0
         output_tokens = getattr(usage, "candidates_token_count", 0) or 0
         return text, parsed, input_tokens, output_tokens

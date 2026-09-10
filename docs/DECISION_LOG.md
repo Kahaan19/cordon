@@ -113,3 +113,56 @@ tutorial, so the entries that mention a number you measured are worth five that 
     with no resolution and no off-platform redirect language at all, a third category the spec's
     two-bucket deflection/substantive framing has no slot for. Reporting that gap honestly is a
     better use of the finding than forcing the regex to agree with a prior.
+
+22. **Swapped `google-generativeai` for `google-genai` in `llm.py` (CLAUDE.md rule 6 dependency
+    change).** The first live taxonomy run (Phase 2) hit a 401 after ~18 minutes of 429 backoff.
+    `google-generativeai` itself prints "all support has ended... switch to google.genai" on
+    import — it's officially dead, not a transient bug. Verified the failure was structural, not
+    the SDK: an isolated fresh call with the new SDK, both via `api_key=` and via an explicit
+    OAuth2 Bearer `Credentials` object, hit the identical 401 `ACCESS_TOKEN_TYPE_UNSUPPORTED` from
+    `generativelanguage.googleapis.com` — three different auth mechanisms, one consistent error,
+    which is the key itself, not a transport mismatch (a fresh `AIza...` key from
+    aistudio.google.com/apikey resolves this; see SETUP.md §3). Migrated `GeminiBackend.generate()`
+    to `genai.Client(api_key=...).models.generate_content(...)` regardless, since the old SDK is
+    provably unmaintained and would fail again on the next call even with a valid key.
+
+24. **My taxonomy is stable at mean ARI 0.565 (range 0.47-0.68) across 3 seeds and k in
+    {24, 36}.** The least stable rerun (seed 1, k=24) puts the single most-confused pair at
+    `playback_streaming_failure` vs. `app_bugs_and_ui_complaints` (197 of 4,000 messages) — and
+    that is the exact same seam I flagged by hand while merging clusters 16 and 23 (both
+    generic "app is broken" clusters that could plausibly sit on either side). The automated
+    check and the human merge call landed on the same boundary independently; that's the
+    taxonomy's real seam, not a labelling accident, and `taxonomy/intents.yaml`'s exclude field
+    for both intents says so explicitly.
+
+25. **Committed the human merge decision (`taxonomy/merge_map.yaml`, `taxonomy/boundary_notes.yaml`)
+    as real inputs, not just a one-off argument.** `taxonomy_finalize.py` reads them back to
+    regenerate `taxonomy/intents.yaml` byte-for-byte (verified via `make taxonomy-finalize`), so
+    the one genuinely human step in Phase 2 is still fully reproducible from committed files, not
+    a step a reviewer has to trust happened once and can't rerun.
+
+26. **Split `taxonomy.py` into `taxonomy.py` (induce) and `taxonomy_finalize.py` (merge +
+    consolidate + stability) once the combined file passed ~250 lines** (CLAUDE.md rule 9).
+    They're genuinely two different jobs on two different schedules — induction is a
+    deterministic machine step; finalization depends on a human merge decision — so the split
+    tracks a real seam in the workflow, not an arbitrary line-count dodge.
+
+27. **Added an LLM consolidation pass for intents merged from 2+ clusters.** The first draft of
+    `taxonomy/intents.yaml` built each merged intent's definition/include/exclude by
+    concatenating every member cluster's own LLM output with "; " — honest (never hand-typed)
+    but unreadable for the two largest merges (6 and 8 clusters). One extra Gemini call per
+    multi-cluster intent (7 calls, `gemini-3.5-flash-lite`, ~$0) synthesizes those into one clean
+    sentence each, still built only from what the per-cluster outputs already said.
+
+23. **Repointed `GEN_MODEL` from `gemini-flash-latest` to `gemini-3.5-flash-lite`.** With a
+    working key, the taxonomy induce run still failed: `gemini-flash-latest` resolves today to
+    `gemini-3.8-flash`, and its free tier is a hard 20-requests-**per day** cap (the exact quota
+    named in a live 429 `RESOURCE_EXHAUSTED` response) — a daily ceiling, not the per-minute
+    limit BUILD_SPEC.md §2 anticipated, and retrying against it just burns more of the same 20
+    requests. Checked alternatives live rather than guessing: `gemini-2.5-flash` and
+    `gemini-2.5-flash-lite` both 404 ("no longer available to new users"); `gemini-3.6-flash`,
+    `gemini-3.5-flash-lite`, and `gemini-3.1-flash-lite` all responded successfully. Picked
+    `gemini-3.5-flash-lite` — a lighter tier than the newest flagship preview, so plausibly a more
+    generous free daily quota, while staying in the "Flash" family the spec calls for. Also
+    broadened `GeminiBackend`'s retry markers to `429/503/UNAVAILABLE/RESOURCE_EXHAUSTED` (was
+    429-only) after hitting a transient 503 mid-run, and raised `MAX_RETRIES` to 10.

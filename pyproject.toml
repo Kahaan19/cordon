@@ -11,7 +11,7 @@ dependencies = [
   "sentence-transformers",
   "pydantic",
   "pyyaml",
-  "google-generativeai",
+  "google-genai",
   "ollama",
   "pytest",
   "matplotlib",

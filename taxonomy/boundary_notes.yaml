@@ -1,0 +1,9 @@
+playback_streaming_failure: >
+  Ambiguous boundary: cluster 16 (generic "technical_difficulties", no explicit device/UI
+  complaint) was merged here rather than into app_bugs_and_ui_complaints because its cluster
+  siblings (8, 19, 28) all reference active watching. Likely a source of annotation disagreement.
+app_bugs_and_ui_complaints: >
+  Ambiguous boundary: cluster 23 ("technical_issues_and_complaints", mentions buffering and
+  freezing) was merged here rather than into playback_streaming_failure because its LLM-generated
+  definition leads with app malfunction/UI dissatisfaction. Likely a source of annotation
+  disagreement.
