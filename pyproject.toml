@@ -1,0 +1,27 @@
+[project]
+name = "cordon"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy",
+  "pandas",
+  "pyarrow",
+  "scikit-learn",
+  "scipy",
+  "sentence-transformers",
+  "pydantic",
+  "pyyaml",
+  "google-generativeai",
+  "ollama",
+  "pytest",
+  "matplotlib",
+  "jinja2",
+  "rich",
+  "python-dotenv",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]

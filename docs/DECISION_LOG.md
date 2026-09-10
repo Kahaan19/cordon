@@ -5,9 +5,16 @@ actually happened, and add every decision you make along the way.** The brief as
 for 15 real ones. Reviewers read this file to find out whether you were thinking or following a
 tutorial, so the entries that mention a number you measured are worth five that don't.
 
-1. **Picked the brand by audit, not by volume.** Ranked 15 brands on `substantive_rate ×
-   log10(volume) × (1 − template_ratio)`. The highest-volume brand had a deflection rate of
-   [X]% — a corpus of non-resolutions is not groundable. Chose [BRAND] at [Y]% deflection.
+1. **Picked the brand by audit, not by volume.** Ranked the top 15 brands by volume on
+   `substantive_rate × log10(n_threads) × (1 − template_ratio)`. The highest-volume brand
+   (AmazonHelp, 81,454 threads) has deflection_rate 5.9% and substantive_rate 43.3% — lower
+   deflection than BUILD_SPEC.md §4 predicted ("well north of 50%"), because Amazon's dominant
+   first-reply pattern is a public diagnostic question with no resolution and no off-platform
+   redirect language at all, not a literal "DM us" (see #21 — that's the report's headline
+   surprise, not a deflection-regex bug). Picked **hulu_support** instead: 14,790 threads,
+   deflection_rate 1.2%, substantive_rate 61.1%, answerability_score 1.584 vs. AmazonHelp's
+   1.030 — real troubleshooting content in public (device models, network requirements,
+   power-cycle steps), not privacy-gated handoffs.
 
 2. **Rejected "similarity to the historical reply" as the quality target.** Measured that a constant
    "please DM us" string scores [X] ROUGE-L against real replies, ~[Y]% of the full system's. The
@@ -77,3 +84,32 @@ tutorial, so the entries that mention a number you measured are worth five that 
 
 18. **Cut [thing you cut] and said so.** [One line on the trade.] Cutting loudly beats shipping a
     half-built feature that the evaluation can't support.
+
+19. **Used TF-IDF, not bge-small, for the audit's `topic_entropy` KMeans.** `topic_entropy` is
+    descriptive flavor in `brand_audit.md` ("a brand with one topic is a boring brand") and is not
+    a term in `answerability_score` — the pick doesn't depend on it. Loading the project's fixed
+    neural embedding model this early, before it's load-bearing (taxonomy induction, Phase 2), was
+    a heavier dependency than the number's importance justified. Confirmed on a synthetic 12,020-
+    thread smoke test that the pipeline still correctly separates a deflecting brand from a
+    substantive one on the metrics that matter (`substantive_rate`, `deflection_rate`); revisit if
+    a reviewer wants topic_entropy on the fixed embedding for consistency with later phases.
+
+20. **`requires-python = ">=3.11"`, not pinned to 3.11 exactly.** BUILD_SPEC.md §2 names Python
+    3.11; this machine only has 3.13 system-wide. Let `uv sync` resolve its own interpreter rather
+    than assuming one exists — it picked 3.12, which satisfies every constraint in the spec (MPS
+    support, dependency compatibility) without a manual `uv python install 3.11` step.
+
+21. **Widened `DEFLECTION_PATTERNS` after auditing real AmazonHelp replies, then stopped.** The
+    spec's literal DM-keyword regex gave AmazonHelp a deflection_rate of 0.75% on the first real
+    run — implausible on its face given BUILD_SPEC.md §4's own prediction. Sampling 25 real
+    first-agent-replies showed Amazon's actual redirect phrasing is link-gated ("please contact
+    us here: <url> so we can assist you accordingly"), not the word "DM". Validated the candidate
+    patterns against all 108 brands before adding them: they concentrate in AmazonHelp (5.2% hit
+    rate) and Uber_Support (1.2%), and barely touch hulu_support (0.7%) or any brand whose links
+    point to genuine troubleshooting docs — so the fix targets the real gap, not a cosmetic one.
+    After the fix, AmazonHelp's deflection_rate rises to 5.9% (first reply) / 9.1% (any agent turn
+    in the thread) — still far under "well north of 50%". Stopped widening the regex there instead
+    of chasing that number: the residual ~51% of Amazon's first replies are diagnostic questions
+    with no resolution and no off-platform redirect language at all, a third category the spec's
+    two-bucket deflection/substantive framing has no slot for. Reporting that gap honestly is a
+    better use of the finding than forcing the regex to agree with a prior.
