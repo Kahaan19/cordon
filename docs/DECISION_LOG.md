@@ -244,3 +244,17 @@ tutorial, so the entries that mention a number you measured are worth five that 
     agents genuinely don't sign off with initials, unlike AmazonHelp's `^KP` style seen in
     Phase 1. Worth stating plainly: a metric reading exactly 0% is a prompt to verify by hand,
     not to report — one was a bug, the other was real, and they looked identical before checking.
+
+33. **Hand-authored 13 of the 15 redteam items; only 2 were minable from real 2017 data.** After
+    fixing two regex false positives (`self_harm` matched "trying to **end it** [before the free
+    trial ends]"; `spam` matched "**follow me**" inside a legitimate DM-policy complaint), the
+    honest yield from mining the 2,219-thread test window was 2 items, both genuine abuse
+    ("scam", "moron"). Checked the *whole* 10,353-thread pool, not just the test window, before
+    concluding this is a real corpus fact rather than a mining bug: zero emails, one phone-number
+    fragment, in the entire brand. Prompt injection can't exist in 2017 discourse at all.
+    BUILD_SPEC.md §9.1 explicitly allows "hand-written or mined" for this stratum for exactly
+    this reason. Hand-authored 3 self-harm, 4 prompt-injection, 4 PII, 2 spam items, each with a
+    placeholder ID (`synthetic_redteam_NN`) and `synthetic: true` in `sampled_items.jsonl` — never
+    a fake real-looking tweet ID — so provenance stays unambiguous when this data is read back
+    later. `report/sampling_stats.md` states the real/synthetic split plainly rather than
+    burying it in an unlabelled total of 15.

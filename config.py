@@ -127,3 +127,12 @@ VOICE_PROFILE_SAMPLE_SIZE = 300
 # or reuse fewer of the same cached samples, so they cost nothing extra and stay in the grid.
 # See docs/DECISION_LOG.md #29 for the call-volume estimate that drove this.
 ABLATIONS = ["retrieval", "linter", "self_consistency", "conformal"]
+
+# --- golden set sampling (BUILD_SPEC.md §9.1 / docs/ANNOTATION_GUIDE.md §1) -
+GOLDEN_N_NATURAL = 120
+GOLDEN_N_RARE_INTENT = 40
+GOLDEN_N_HARD = 25
+GOLDEN_N_REDTEAM = 15
+GOLDEN_N_RARE_INTENTS_TO_USE = 4  # "the 4 lowest-frequency intents"
+GOLDEN_N_REFERENCE_REPLY_NATURAL = 40  # docs/ANNOTATION_GUIDE.md §2's 60-item subset
+GOLDEN_N_REFERENCE_REPLY_HARD = 20
