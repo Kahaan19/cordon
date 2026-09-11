@@ -1,0 +1,33 @@
+{
+  "intent": "live_tv_streaming_failure",
+  "typical_steps": [
+    "Acknowledge the issue with an expression of empathy or apology",
+    "Ask clarifying questions regarding the device, channel, network, and error messages",
+    "Direct the customer to troubleshooting steps using a help link",
+    "Suggest basic device actions like rebooting the device, modem, or router",
+    "Invite the customer to follow up or reach out via phone or chat if the issue persists"
+  ],
+  "info_agent_requests": [
+    "What device are you using?",
+    "Notice an error message?",
+    "What channel or network is affected?",
+    "Is this during live TV or on-demand?",
+    "Are you experiencing the same when trying on wifi?"
+  ],
+  "when_they_escalate_to_dm": "Agents invite customers to reach out via phone, chat, or direct message when troubleshooting steps fail to resolve the issue or when they need to gather more account details.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Sorry for the trouble!",
+    "Oh no!",
+    "What device are you using?",
+    "Let's try:",
+    "Any change?"
+  ],
+  "never_promises": [
+    "specific timeframes for bug fixes",
+    "compensation or refunds",
+    "guarantees that a specific workaround will instantly fix the issue"
+  ]
+}

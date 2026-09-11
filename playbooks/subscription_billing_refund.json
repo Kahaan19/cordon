@@ -1,0 +1,31 @@
+{
+  "intent": "subscription_billing_refund",
+  "typical_steps": [
+    "Acknowledge the unexpected charge or billing issue",
+    "Direct the customer to call or chat via support link",
+    "Investigate the account details and billing history on their end",
+    "Explore available options or solutions with the customer"
+  ],
+  "info_agent_requests": [
+    "Account details",
+    "Paypal email",
+    "Email address the offer was sent to",
+    "Email and billing zip"
+  ],
+  "when_they_escalate_to_dm": "Agents consistently direct users to public call or chat links rather than mentioning direct messages on Twitter.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Sorry to hear about the unexpected charge",
+    "We'd love to take a closer look",
+    "Give us a call or chat with us here",
+    "We can help",
+    "Let's get that fixed"
+  ],
+  "never_promises": [
+    "Guaranteed refunds",
+    "Specific resolution timelines",
+    "Free months or compensation"
+  ]
+}

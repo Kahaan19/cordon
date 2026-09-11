@@ -102,6 +102,11 @@ class GeminiBackend:
 
     MAX_RETRIES = 10
     RETRYABLE_MARKERS = ("429", "503", "UNAVAILABLE", "RESOURCE_EXHAUSTED")
+    # DECISION: a per-day quota violation (quotaId contains "PerDay") needs a ~24h wait, not a
+    # 60s-capped backoff -- retrying just burns MAX_RETRIES attempts pointlessly before failing
+    # anyway. Fail immediately and loudly instead (rule 10); per-minute/transient errors still
+    # get the full retry treatment. See docs/DECISION_LOG.md.
+    NON_RETRYABLE_MARKERS = ("PerDay",)
 
     def generate(self, prompt: str, system: str, temperature: float, max_tokens: int,
                  schema: dict | None, model: str) -> tuple[str, dict | None, int, int]:
@@ -130,7 +135,9 @@ class GeminiBackend:
                 # SDK raises different exception types across versions for the same transient
                 # condition, and every one of them must retry, never surface as a pipeline
                 # failure (rule 3a).
-                retryable = any(marker in str(exc) for marker in self.RETRYABLE_MARKERS)
+                text = str(exc)
+                retryable = (any(m in text for m in self.RETRYABLE_MARKERS)
+                             and not any(m in text for m in self.NON_RETRYABLE_MARKERS))
                 if not retryable or attempt == self.MAX_RETRIES - 1:
                     raise
                 wait = min(2 ** attempt, 60)

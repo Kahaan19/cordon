@@ -109,3 +109,21 @@ TAXONOMY_SAMPLE_SIZE = 4000
 TAXONOMY_KMEANS_K = 30
 TAXONOMY_STABILITY_SEEDS = [1, 2]
 TAXONOMY_STABILITY_KS = [24, 36]
+
+# --- retrieval index (Phase 3) ----------------------------------------------
+RETRIEVAL_TOP_K = 8
+RETRIEVAL_MMR_K = 3
+RETRIEVAL_MMR_LAMBDA = 0.5
+RETRIEVAL_DIVERSITY_SAMPLE_SIZE = 50  # queries sampled for the before/after duplication report
+
+# --- playbooks + voice profile (Phase 3) ------------------------------------
+PLAYBOOK_REPLIES_PER_INTENT = 100
+VOICE_PROFILE_SAMPLE_SIZE = 300
+
+# --- ablations (Phase 5) ----------------------------------------------------
+# DECISION: full grid per BUILD_SPEC.md §9.2 is -retrieval/-playbook/-linter/-self_consistency/
+# -conformal. Dropped only -playbook: it and -retrieval are the only two that change the draft
+# prompt (fresh Gemini calls); -linter/-self_consistency/-conformal are downstream of generation
+# or reuse fewer of the same cached samples, so they cost nothing extra and stay in the grid.
+# See docs/DECISION_LOG.md #29 for the call-volume estimate that drove this.
+ABLATIONS = ["retrieval", "linter", "self_consistency", "conformal"]

@@ -1,0 +1,33 @@
+{
+  "intent": "app_bugs_and_ui_complaints",
+  "typical_steps": [
+    "Acknowledge frustration or issue with an empathetic exclamation",
+    "Ask for device and specific behavior, error codes, or error messages",
+    "Direct user to relevant help guides or troubleshooting steps",
+    "Offer links to share feedback or community forums for UI complaints",
+    "Suggest reaching out via phone or chat if further assistance is needed"
+  ],
+  "info_agent_requests": [
+    "Which device are you using?",
+    "What specific behavior are you experiencing?",
+    "Any error codes?",
+    "What issue are you running into (buffering, freezing, error)?",
+    "Device and model"
+  ],
+  "when_they_escalate_to_dm": "Agents escalate to phone or chat when complex troubleshooting or account-specific investigation is required.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Sorry for the delay!",
+    "We'll share your feedback!",
+    "What device are you streaming from?",
+    "Perhaps we can help!",
+    "We'd love to help!"
+  ],
+  "never_promises": [
+    "Roll back to the previous UI",
+    "Make any promises about implementing specific requests",
+    "Guaranteed fixed timelines for updates"
+  ]
+}

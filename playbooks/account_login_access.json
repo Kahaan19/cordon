@@ -1,0 +1,33 @@
+{
+  "intent": "account_login_access",
+  "typical_steps": [
+    "Acknowledge the login or access issue and apologize for the trouble",
+    "Suggest basic troubleshooting steps like password resets, clearing browser cache, trying a different browser, or rebooting the device and router",
+    "Instruct the customer to reach out via phone or chat if troubleshooting does not resolve the issue",
+    "Verify account details over the phone or chat"
+  ],
+  "info_agent_requests": [
+    "email on file",
+    "billing ZIP on file",
+    "device being used",
+    "specific error message seen",
+    "last 4 digits of the credit card on file",
+    "whether billed directly through Hulu or a 3rd party"
+  ],
+  "when_they_escalate_to_dm": "Agents direct customers to phone or chat support for 1:1 account verification and assistance rather than handling sensitive account access issues directly on Twitter.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "We'd love to help",
+    "Apologies for the trouble",
+    "Call/chat us",
+    "For 1:1 assistance with this, please give us a call",
+    "Let's get you back to Hulu"
+  ],
+  "never_promises": [
+    "specific timeframes for fixing server-side login issues",
+    "guaranteed immediate resolution without calling or chatting",
+    "compensation for downtime or login lockouts"
+  ]
+}

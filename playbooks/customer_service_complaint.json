@@ -1,0 +1,31 @@
+{
+  "intent": "customer_service_complaint",
+  "typical_steps": [
+    "Acknowledge the customer's frustration and apologize for the trouble or delay",
+    "Ask for specific details about the issue and the device being used",
+    "Instruct the customer to try troubleshooting steps via a provided link or device/modem reboot",
+    "Encourage reaching out via live chat or phone for real-time 1:1 support if issues persist"
+  ],
+  "info_agent_requests": [
+    "What specific trouble or issue you are running into",
+    "Which device or model is in use",
+    "Any error messages received",
+    "Email on file and billing zip (for DM escalations)"
+  ],
+  "when_they_escalate_to_dm": "Agents escalate to a direct message when they need account-specific sensitive information like the email on file and billing zip, or to collect positive feedback/shoutouts.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Sorry for the trouble!",
+    "Oh no!",
+    "We're here to help!",
+    "Let's get this sorted.",
+    "Apologies for the delay!"
+  ],
+  "never_promises": [
+    "Exact wait times for chat or phone support",
+    "Specific dates for upcoming releases or content arrivals",
+    "Immediate resolution without trying troubleshooting steps first"
+  ]
+}

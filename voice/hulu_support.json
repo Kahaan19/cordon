@@ -1,0 +1,11 @@
+{
+  "n_replies": 300,
+  "mean_length": 104.38333333333334,
+  "exclamation_rate": 0.8733333333333333,
+  "emoji_rate": 0.11666666666666667,
+  "apology_opener_rate": 0.37666666666666665,
+  "signoff_rate": 0.0,
+  "top_signoff": null,
+  "uses_customer_name_rate": 0.12666666666666668,
+  "question_per_reply_rate": 0.29333333333333333
+}

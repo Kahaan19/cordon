@@ -1,0 +1,32 @@
+{
+  "intent": "ads_on_ad_free_plan",
+  "typical_steps": [
+    "Explain that ads help keep the base plan price affordable and offset the cost of newer or current content",
+    "Mention the availability of the No Commercials plan or add-on as an alternative option",
+    "Ask the customer to clarify their device, show, season, episode, or whether they are using Live TV",
+    "Provide troubleshooting steps such as rebooting the device and modem/router, clearing cache, or updating ad preferences via a PC or Mac"
+  ],
+  "info_agent_requests": [
+    "Which device are you on?",
+    "Which show were you viewing?",
+    "Which season and episode?",
+    "Do you have Hulu with Live TV?",
+    "What was being advertised or what brand is being advertised?"
+  ],
+  "when_they_escalate_to_dm": "Agents escalate to a direct message or 1:1 support when troubleshooting steps do not resolve the issue, when investigating technical errors, or when collecting specific account and device details.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Ads help us keep the price affordable",
+    "If you prefer no interruptions",
+    "Sorry for any trouble!",
+    "Yikes!",
+    "We'll share your feedback!"
+  ],
+  "never_promises": [
+    "Promising that specific ads can be permanently blocked",
+    "Promising exact ad-load or variety improvements by a specific date",
+    "Promising that all shows are included in the No Commercials plan"
+  ]
+}

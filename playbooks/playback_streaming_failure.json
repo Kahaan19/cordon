@@ -1,0 +1,35 @@
+{
+  "intent": "playback_streaming_failure",
+  "typical_steps": [
+    "Acknowledge frustration or apologize for the delay",
+    "Ask clarifying questions regarding the device, error messages, or specific content",
+    "Suggest basic troubleshooting steps such as checking for app updates, rebooting the device, power cycling the modem/router, or checking HDMI cords",
+    "Direct the customer to a help article or troubleshooting URL",
+    "Ask the customer to report back if they notice an improvement",
+    "Escalate to a phone call, live chat, or direct message if basic steps do not resolve the issue"
+  ],
+  "info_agent_requests": [
+    "What device are you streaming with / using?",
+    "Do you notice any error messages?",
+    "Does this happen on certain ads or all of them?",
+    "Does this appear at app launch or playback?",
+    "What model is your ATV?",
+    "Is this happening with all shows or a specific one?"
+  ],
+  "when_they_escalate_to_dm": "Agents escalate to a direct message or phone/chat support if troubleshooting steps and basic device reboots do not resolve the streaming failure or if they need to collect additional account details.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Sorry for the trouble!",
+    "What device are you using?",
+    "For now, try:",
+    "Notice an improvement?",
+    "Please call us or chat:"
+  ],
+  "never_promises": [
+    "Guaranteed immediate fix without troubleshooting",
+    "Specific resolution timelines for ongoing investigations",
+    "Compensation or refunds"
+  ]
+}

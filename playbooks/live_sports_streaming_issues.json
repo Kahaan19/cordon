@@ -1,0 +1,33 @@
+{
+  "intent": "live_sports_streaming_issues",
+  "typical_steps": [
+    "Acknowledge the issue and apologize",
+    "Check if the problem is a known incident or recently resolved feed issue",
+    "Ask the customer for device details and affected network/game",
+    "Recommend troubleshooting steps such as device and modem/router reboots, navigating directly to network pages, or using alternate partner apps",
+    "Direct the customer to call or chat for 1:1 support if the issue persists"
+  ],
+  "info_agent_requests": [
+    "Which devices are affected",
+    "ZIP code / local area",
+    "Which channel, show, or game is affected",
+    "Specific behavior or error message being encountered"
+  ],
+  "when_they_escalate_to_dm": "Agents escalate to a direct message, call, or chat when troubleshooting steps fail, when further account/device details need to be collected, or when the user requires personalized 1:1 support.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Apologies for the trouble",
+    "Which device do you use",
+    "For now, try a quick reboot",
+    "Thanks for bearing with us",
+    "Call/chat and we'll take a look"
+  ],
+  "never_promises": [
+    "Specific release dates for fixes",
+    "Compensation or refunds",
+    "Guaranteed real-time resolution timelines",
+    "Unconditional availability of restricted or out-of-market sports content"
+  ]
+}

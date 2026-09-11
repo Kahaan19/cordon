@@ -1,0 +1,32 @@
+{
+  "intent": "live_tv_signup_or_access",
+  "typical_steps": [
+    "Ask for the customer's streaming device",
+    "Direct the customer to check local zip code and network availability",
+    "Provide instructions on how to switch plans or sign up from an account page or PC/Mac browser",
+    "Guide the user to navigate to Browse > Networks > Live on supported devices",
+    "Recommend troubleshooting steps such as device or modem reboots and searching for content"
+  ],
+  "info_agent_requests": [
+    "Which device are you using?",
+    "Is ABC available?",
+    "What happens when you try to access these channels?",
+    "Are there any error messages?"
+  ],
+  "when_they_escalate_to_dm": "Agents move the conversation to direct messaging or live chat/phone support when investigating account-specific issues, IP address problems, or when following up on a previously opened support thread.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "Live network coverage is based on your current location",
+    "Check your zip at",
+    "We'd love to help! Please chat with us here",
+    "Head to Browse>Networks>Live",
+    "We'll share your feedback"
+  ],
+  "never_promises": [
+    "No set date yet for upcoming features or content",
+    "No definitive timelines for rolling out updates or frame rate improvements",
+    "No promises on unsupported devices being added immediately"
+  ]
+}

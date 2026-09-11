@@ -1,0 +1,34 @@
+{
+  "intent": "missing_or_upcoming_content",
+  "typical_steps": [
+    "Check release status or streaming rights availability for the requested content",
+    "Provide direct URLs to the content, release schedule pages, or alternative shows",
+    "Explain any hiatus, airdat discrepancies, or expiration details",
+    "Ask for the user's device and streaming environment if content is reported missing despite being available",
+    "Recommend adding the show to Watchlist/My Stuff for future updates"
+  ],
+  "info_agent_requests": [
+    "Which device do you use?",
+    "Are you still experiencing this?",
+    "Is this affecting previously watched eps, unwatched eps, or both?",
+    "Are you streaming from an ATV4?",
+    "Any trouble with other channels?"
+  ],
+  "when_they_escalate_to_dm": "Agents invite users to call, chat, or reach out for 1:1 support when investigating persistent or unresolved missing content issues that require a closer look.",
+  "known_links_used": [
+    "<url>"
+  ],
+  "phrases": [
+    "No release date to share",
+    "Keep an eye on this page",
+    "We got you",
+    "Add to your WL/My Stuff",
+    "We'll share the interest",
+    "Live TV Add-on"
+  ],
+  "never_promises": [
+    "Exact release dates",
+    "Acquiring specific streaming rights",
+    "Making definitive promises about future content additions"
+  ]
+}

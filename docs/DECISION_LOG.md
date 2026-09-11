@@ -126,6 +126,19 @@ tutorial, so the entries that mention a number you measured are worth five that 
     to `genai.Client(api_key=...).models.generate_content(...)` regardless, since the old SDK is
     provably unmaintained and would fail again on the next call even with a valid key.
 
+23. **Repointed `GEN_MODEL` from `gemini-flash-latest` to `gemini-3.5-flash-lite`.** With a
+    working key, the taxonomy induce run still failed: `gemini-flash-latest` resolves today to
+    `gemini-3.8-flash`, and its free tier is a hard 20-requests-**per day** cap (the exact quota
+    named in a live 429 `RESOURCE_EXHAUSTED` response) — a daily ceiling, not the per-minute
+    limit BUILD_SPEC.md §2 anticipated, and retrying against it just burns more of the same 20
+    requests. Checked alternatives live rather than guessing: `gemini-2.5-flash` and
+    `gemini-2.5-flash-lite` both 404 ("no longer available to new users"); `gemini-3.6-flash`,
+    `gemini-3.5-flash-lite`, and `gemini-3.1-flash-lite` all responded successfully. Picked
+    `gemini-3.5-flash-lite` — a lighter tier than the newest flagship preview, so plausibly a more
+    generous free daily quota, while staying in the "Flash" family the spec calls for. Also
+    broadened `GeminiBackend`'s retry markers to `429/503/UNAVAILABLE/RESOURCE_EXHAUSTED` (was
+    429-only) after hitting a transient 503 mid-run, and raised `MAX_RETRIES` to 10.
+
 24. **My taxonomy is stable at mean ARI 0.565 (range 0.47-0.68) across 3 seeds and k in
     {24, 36}.** The least stable rerun (seed 1, k=24) puts the single most-confused pair at
     `playback_streaming_failure` vs. `app_bugs_and_ui_complaints` (197 of 4,000 messages) — and
@@ -154,15 +167,80 @@ tutorial, so the entries that mention a number you measured are worth five that 
     multi-cluster intent (7 calls, `gemini-3.5-flash-lite`, ~$0) synthesizes those into one clean
     sentence each, still built only from what the per-cluster outputs already said.
 
-23. **Repointed `GEN_MODEL` from `gemini-flash-latest` to `gemini-3.5-flash-lite`.** With a
-    working key, the taxonomy induce run still failed: `gemini-flash-latest` resolves today to
-    `gemini-3.8-flash`, and its free tier is a hard 20-requests-**per day** cap (the exact quota
-    named in a live 429 `RESOURCE_EXHAUSTED` response) — a daily ceiling, not the per-minute
-    limit BUILD_SPEC.md §2 anticipated, and retrying against it just burns more of the same 20
-    requests. Checked alternatives live rather than guessing: `gemini-2.5-flash` and
-    `gemini-2.5-flash-lite` both 404 ("no longer available to new users"); `gemini-3.6-flash`,
-    `gemini-3.5-flash-lite`, and `gemini-3.1-flash-lite` all responded successfully. Picked
-    `gemini-3.5-flash-lite` — a lighter tier than the newest flagship preview, so plausibly a more
-    generous free daily quota, while staying in the "Flash" family the spec calls for. Also
-    broadened `GeminiBackend`'s retry markers to `429/503/UNAVAILABLE/RESOURCE_EXHAUSTED` (was
-    429-only) after hitting a transient 503 mid-run, and raised `MAX_RETRIES` to 10.
+28. **Measured `gemini-3.5-flash-lite`'s free-tier RPM directly: 15 requests/minute** (from the
+    live `GenerateRequestsPerMinutePerProject...FreeTier` quota violation, not a guess). RPD
+    could not be pinned down the same way: Google's rate-limits docs no longer publish a
+    per-model table (confirmed via WebFetch — only "view your limits in AI Studio," which is
+    authenticated and unreachable from here), and deliberately did not burn quota hunting for the
+    exact RPD ceiling once ~70 real calls succeeded today with zero RPD-type violation (only RPM
+    ones) — that's a fine lower bound for planning; finding the exact number would cost more
+    quota than the answer is worth. TPM was never the bottleneck in any test — our prompts are a
+    few hundred tokens, nowhere near a per-minute token cap. Also split `GeminiBackend`'s retry
+    condition: a `PerDay`-scoped 429 fails immediately (rule 10, fail loudly) instead of burning
+    all 10 retries against a 60s-capped backoff that can't possibly outlast a ~24h quota window;
+    `PerMinute`/transient errors still get the full retry treatment.
+
+29. **Trimmed the Phase 5 ablation grid to `-retrieval`, `-linter`, `-self_consistency`,
+    `-conformal` — dropped only `-playbook`.** Estimated remaining Gemini call volume against
+    the confirmed RPM=15 finding (#28) before starting Phase 3:
+
+    | Phase | Source | Calls |
+    |---|---|---|
+    | 3 | playbook mining, 1/intent (10, skip `other`) | 10 |
+    | 4 | agent × 200 golden items: classify(1) + draft self-consistency(3) | 800 |
+    | 5 | B2 baseline, 1/item | 200 |
+    | 5 | `-retrieval`, `-playbook` ablations (only these two change the draft prompt; `-linter`/`-self_consistency`/`-conformal` are post-hoc or reuse-of-fewer-cached-samples, 0 extra calls) — 2 × 200 × 3 | 1,200 |
+    | 6 | judge scoring is 100% Ollama (0); trap-set defect injection, ~40 items | ~30 |
+    | **Total** | | **~2,240** |
+
+    RPD for `gemini-3.5-flash-lite` is unconfirmed (#28's lower bound only: >~70). Rather than
+    gamble the whole remaining build on an unknown ceiling, cut the one ablation that's purely
+    a cost center with no free-tier benefit: `-playbook` costs another 600 calls and duplicates
+    what `-retrieval` already demonstrates (the value of grounding evidence in the draft
+    prompt). `-linter`, `-self_consistency`, and `-conformal` stay in the grid — they cost zero
+    additional calls (linter/conformal are downstream of generation; the self-consistency
+    ablation just uses fewer of the same cached samples), so cutting them would only make the
+    evaluation worse for no budget benefit. New total: **~1,640 calls (~1.8h of issuing time at
+    RPM=15)**, comfortably inside a single day under any plausible RPD. Fallback if a day
+    boundary is still hit mid-run: stop and resume tomorrow from the committed cache — free and
+    lossless, which is what the cache exists for (#14, #28's `PerDay` fail-fast fix).
+
+    **Considered and rejected: shrinking the golden set instead.** BUILD_SPEC.md §12 explicitly
+    protects it ("Never cut: the golden set...") — it's the single highest-value deliverable in
+    the whole build, and every downstream metric (calibration, judge validation, baselines)
+    reads off it. A rate-limit inconvenience is not a reason to weaken the one thing every other
+    number in the report depends on; the ablation grid is the correct place to absorb this cut
+    because BUILD_SPEC.md §12 itself pre-approves trimming it (cut-order item 5), and because
+    unlike the golden set, removing one ablation doesn't touch any headline number — it just
+    removes one supporting comparison row.
+
+30. **Intent assignment over the pool corpus reuses the taxonomy's own centroids (nearest-
+    centroid, zero new LLM calls) instead of a fresh classifier.** Pool threads were never
+    individually intent-labelled — only the 4,000-message taxonomy sample was. Recomputing
+    `taxonomy.induce()` (deterministic, cached) and averaging each final intent's member-cluster
+    vectors gives a centroid per intent; assigning every pool thread to its nearest centroid
+    labels the full corpus for playbook mining without spending Phase 4's classifier budget
+    early. This is an embedding heuristic, not the real classifier — expect Phase 4's LLM
+    classifier to disagree with it on some fraction of borderline threads, same seam as the
+    taxonomy's own ARI-confirmed boundary (#24).
+
+31. **Retrieval diversity: MMR helps per-query but the corpus is genuinely redundant.**
+    Inspecting one query directly (a Sunday Night Football outage) showed MMR correctly
+    skipping a near-duplicate complaint in favor of a differently-angled one — it works. But
+    the aggregate mean pairwise cosine similarity only drops from 0.790 (raw top-8) to 0.764
+    (MMR top-3, λ=0.5) across 50 sampled queries. Real customers describing the same live
+    incident (an outage, a blackout) genuinely sound alike; MMR can't invent diversity that
+    isn't in the underlying corpus. Reported as-is rather than tuning λ to produce a more
+    dramatic-looking number — the honest finding is that this corpus's redundancy is a property
+    of live-support data, not a retrieval bug.
+
+32. **Found and fixed a real regex bug in the voice profile, not a genuine 0%.**
+    `uses_customer_name_rate` came back 0.0/300 on the first run. Manual inspection of the
+    actual sample ("Hey Christy!", "Hi Noah!") showed the greeting pattern was obviously
+    present — `GREETING_NAME_RE` was just missing `re.IGNORECASE`, so it only matched an exact-
+    lowercase "hi"/"hey". Fixed; re-ran (free, all `gemini-3.5-flash-lite` calls cache-hit) and
+    it now reads 12.7%. By contrast, `signoff_rate = 0.0` is real: directly re-checked for any
+    `^XX`-style pattern (case-insensitive) across the same 300 replies and found zero — Hulu's
+    agents genuinely don't sign off with initials, unlike AmazonHelp's `^KP` style seen in
+    Phase 1. Worth stating plainly: a metric reading exactly 0% is a prompt to verify by hand,
+    not to report — one was a bug, the other was real, and they looked identical before checking.
