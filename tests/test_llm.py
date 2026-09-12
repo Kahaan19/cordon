@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from cordon import llm
+from cordon import llm, llm_backends
 
 
 def test_cache_hit_returns_identical_text_and_is_free(tmp_path, monkeypatch):
@@ -18,7 +18,7 @@ def test_cache_hit_returns_identical_text_and_is_free(tmp_path, monkeypatch):
     def boom(*_args, **_kwargs):
         raise AssertionError("backend must not be called on a cache hit")
 
-    monkeypatch.setattr(llm.GeminiBackend, "generate", boom)
+    monkeypatch.setattr(llm_backends.GeminiBackend, "generate", boom)
 
     result = llm.complete("hello", model="gemini-flash-latest")
 
@@ -36,7 +36,7 @@ def test_offline_cache_miss_raises_without_calling_a_backend(tmp_path, monkeypat
     def boom(*_args, **_kwargs):
         raise AssertionError("offline cache miss must never reach a backend")
 
-    monkeypatch.setattr(llm.GeminiBackend, "generate", boom)
+    monkeypatch.setattr(llm_backends.GeminiBackend, "generate", boom)
 
     with pytest.raises(llm.CacheMiss):
         llm.complete("a prompt never cached before", model="gemini-flash-latest")

@@ -195,3 +195,20 @@ DEFECT_TO_DIMENSION = {
 
 LENGTH_PROBE_FILLER = (" Thank you so much for your patience and for being a valued member of "
                         "our community -- we really do appreciate you reaching out today.")
+
+# --- calibration + evaluation (Phase 6b, BUILD_SPEC.md §7.4, §8, §9.3) -----
+# DECISION: BUILD_SPEC.md §8 says "fit on the calib split of the golden set, evaluate on
+# test" -- but docs/ANNOTATION_GUIDE.md §1 draws the entire 200-item golden set from the test
+# window only, so there's no golden-set overlap with the original pool/calib/test thread
+# split. Resolved as: split the golden set ITSELF into two roles, stratified by `stratum`,
+# seeded -- "golden_fit" (risk-model fitting + threshold search) and "golden_holdout"
+# (the honest, held-out evaluation §8 asks for). See docs/DECISION_LOG.md.
+GOLDEN_FIT_FRACTION = 0.5
+
+RISK_ALPHAS = [0.01, 0.05, 0.10, 0.15, 0.20]  # BUILD_SPEC.md §8's coverage-risk curve x-axis
+RISK_COST_RATIOS = [1, 5, 20, 100]  # BUILD_SPEC.md §8's C_b (bad-reply cost, units of C_h)
+CLOPPER_PEARSON_CONF = 0.90
+CLOPPER_PEARSON_MIN_N = 20  # choose_threshold refuses to certify on thinner evidence than this
+
+BOOTSTRAP_N_RESAMPLES = 2000  # BUILD_SPEC.md §9.3
+BOOTSTRAP_CI = 0.95

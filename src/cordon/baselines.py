@@ -11,6 +11,7 @@ Runs alone: `python -m cordon.baselines --help`.
 from __future__ import annotations
 
 import argparse
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -46,14 +47,15 @@ B2_SCHEMA = {
 
 def _make_trace(message: str, intent: str, intent_probs: dict, margin: float,
                  retrieved: list[RetrievedExample], reply: str, decision: str,
-                 decision_reason: str, evidence_text: str, voice: dict) -> Trace:
+                 decision_reason: str, evidence_text: str, voice: dict, start: float) -> Trace:
     violations = lint_draft(reply, evidence_text, voice)
     cc = claim_check(reply, evidence_text)
     return Trace(message=message, cleaned=message, intent_pred=intent, intent_probs=intent_probs,
                  axes=DEFAULT_AXES, margin=margin, retrieved=retrieved, playbook_used=None,
                  drafts=[reply], draft_final=reply, self_consistency=None,
                  linter=LinterResult(violations=violations), claim_check=cc, risk_score=None,
-                 decision=decision, decision_reason=decision_reason, latency_ms=0.0, cost_usd=0.0)
+                 decision=decision, decision_reason=decision_reason,
+                 latency_ms=(time.perf_counter() - start) * 1000, cost_usd=0.0)
 
 
 def fit_b0(pool: list) -> tuple[str, str]:
@@ -72,13 +74,15 @@ def fit_b0(pool: list) -> tuple[str, str]:
 
 
 def b0a_deflector(message: str, majority_intent: str, deflection_reply: str, voice: dict) -> Trace:
+    start = time.perf_counter()
     return _make_trace(message, majority_intent, {majority_intent: 1.0}, 0.0, [], deflection_reply,
-                        "auto", "B0a: never escalate (baseline rule, not learned)", "", voice)
+                        "auto", "B0a: never escalate (baseline rule, not learned)", "", voice, start)
 
 
 def b0b_coward(message: str, majority_intent: str, deflection_reply: str, voice: dict) -> Trace:
+    start = time.perf_counter()
     return _make_trace(message, majority_intent, {majority_intent: 1.0}, 0.0, [], deflection_reply,
-                        "escalate", "B0b: always escalate (baseline rule, not learned)", "", voice)
+                        "escalate", "B0b: always escalate (baseline rule, not learned)", "", voice, start)
 
 
 def fit_b1(pool: list, calib: list, brand: str = CHOSEN_BRAND) -> dict:
@@ -94,6 +98,7 @@ def fit_b1(pool: list, calib: list, brand: str = CHOSEN_BRAND) -> dict:
 
 
 def b1_nearest_neighbor(message: str, b1_state: dict, voice: dict) -> Trace:
+    start = time.perf_counter()
     tfidf, clf, pool, pool_matrix = (b1_state[k] for k in ("tfidf", "clf", "pool", "pool_matrix"))
 
     query_vec = tfidf.transform([message])
@@ -117,12 +122,13 @@ def b1_nearest_neighbor(message: str, b1_state: dict, voice: dict) -> Trace:
                                    agent_reply=reply, similarity=best_sim)]
     # Evidence = the copied reply itself -- B1 can't hallucinate anything beyond what it copied.
     return _make_trace(message, intent, intent_probs, margin, retrieved, reply, decision, reason,
-                        evidence_text=reply, voice=voice)
+                        evidence_text=reply, voice=voice, start=start)
 
 
 def b2_obvious_llm(message: str, taxonomy_text: str, brand: str, voice: dict) -> Trace:
     """One generator call, a complete and fair prompt, no retrieval/playbook/voice scaffolding
     -- "what most candidates will submit" (BUILD_SPEC.md §9.2)."""
+    start = time.perf_counter()
     prompt = (load_prompt("b2_obvious_llm").replace("{{BRAND}}", brand)
               .replace("{{TAXONOMY}}", taxonomy_text).replace("{{MESSAGE}}", message))
     parsed = complete(prompt, model=GEN_MODEL, schema=B2_SCHEMA).parsed
@@ -131,7 +137,7 @@ def b2_obvious_llm(message: str, taxonomy_text: str, brand: str, voice: dict) ->
     # No evidence block by design -- B2 has no retrieval/playbook, so any specific claim it
     # makes is, honestly, unsupported by anything external. That gap is the whole point.
     return _make_trace(message, parsed["intent"], {parsed["intent"]: 1.0}, 0.0, [], reply,
-                        decision, parsed["escalate_reason"], evidence_text="", voice=voice)
+                        decision, parsed["escalate_reason"], evidence_text="", voice=voice, start=start)
 
 
 def main() -> None:

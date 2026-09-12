@@ -419,3 +419,90 @@ tutorial, so the entries that mention a number you measured are worth five that 
     its own model family, per BUILD_SPEC.md §9.4.3c). Worth stating plainly since it's the
     reassuring result: this specific bias, which the project's cross-family design (§2) exists
     to guard against, doesn't show up here.
+
+49. **Added a minimal, opt-in call log to llm.py for ops metrics (§9.3: cache hit-rate,
+    tokens/ticket).** `Trace` only carries `cost_usd`/`latency_ms`; per-call token counts and
+    cache-hit status were being discarded after every `complete()` call. Threading a log
+    parameter through every classify/draft/claim_check call site in agent.py and verify.py
+    would touch a lot of already-tested code for a reporting concern. Instead: a module-level
+    accumulator in llm.py (`reset_call_log()`/`get_call_log()`), appended to inside `complete()`
+    itself regardless of caller. `evaluate.py` calls `reset_call_log()` before processing one
+    golden item and reads back exactly the calls that item made -- zero changes needed to any
+    other module.
+
+50. **Split llm.py into llm.py (cache + complete() + call log) and llm_backends.py (Gemini +
+    Ollama backend classes) once the combined file passed ~250 lines.** Same reasoning as the
+    taxonomy.py/taxonomy_finalize.py and agent.py/verify.py/linter.py splits: caching/dispatch
+    is one job, backend-specific API integration is another. `JUDGE_MODEL`/`GEN_MODEL` stay
+    re-exported from `cordon.llm` (not moved) since judge.py, judge_validation.py, verify.py,
+    baselines.py, taxonomy.py, taxonomy_finalize.py, playbook.py, and agent.py all already
+    import them from there -- the split changes internal structure, not the public interface
+    other modules depend on.
+
+51. **Resolved BUILD_SPEC.md §8's "calib/test" wording against docs/ANNOTATION_GUIDE.md §1's
+    "test window only" for the golden set.** §8 says "fit on the calib split of the golden set,
+    evaluate on test" -- but the entire 200-item golden set is drawn from the test window only
+    (§1), so there's no golden-set overlap with the original pool/calib/test thread split to
+    read those words against literally. Resolved as: split the 200 golden items themselves,
+    stratified by `stratum`, into two roles -- `golden_fit` (risk-model fitting + threshold
+    search) and `golden_holdout` (the honest held-out evaluation §8 is actually asking for).
+    `GOLDEN_FIT_FRACTION = 0.5` in config.py. This is a disambiguation of genuinely ambiguous
+    spec wording, not a disagreement with it -- the underlying intent (fit and evaluate on
+    different data) is preserved exactly.
+
+52. **calibrate.py fails loudly, specifically, on a missing `bad_to_autosend` label rather than
+    approximating it from `should_escalate`.** BUILD_SPEC.md §7.4's risk-model fit and §8's
+    threshold search use two different human labels: `should_escalate` (collected during the
+    main labelling pass, available as soon as golden_v1.jsonl is labelled) and
+    `bad_to_autosend` (BUILD_SPEC.md §3's separate, later, per-system, blind-to-system pass,
+    collected only after every system has run on the golden set -- not yet collected, and not
+    something this project's own annotation guide treats as optional). `main()` fits the risk
+    model and reports real coefficients first (it only needs `should_escalate`), then fails
+    with a specific, actionable error naming exactly which file is missing and why it can't be
+    substituted -- rather than silently proceeding with a proxy for the one label whose entire
+    purpose is to catch what the automated signals miss.
+
+53. **Verified calibrate.py's risk-model-fitting path end-to-end against a small synthetic
+    golden set (16 real messages, fake should_escalate labels, scratchpad only, never
+    committed) before trusting it.** Confirms the mechanism -- running the real agent on each
+    item, extracting the 7 risk features, fitting LogisticRegression, reporting coefficients --
+    works correctly today. No real RESULTS.md is produced by this or any run until
+    golden_v1.jsonl and bad_to_autosend_v1.jsonl exist for real; CLAUDE.md rule 1 forbids
+    hand-written numbers, and fabricated labels would make any headline number produced today
+    worse than useless -- it would look real.
+
+54. **Found and fixed a real bug in baselines.py while wiring up evaluate.py's ops metrics:
+    every baseline's `latency_ms` was hardcoded to `0.0`, never measured.** B0a/B0b/B1/B2 all
+    make at least one real call (claim_check's judge call, B2's generator call), so reporting
+    zero latency for them was flatly wrong, not just imprecise -- it would have made every
+    baseline look instantaneous next to CORDON's real, measured latency in the ops table. Fixed
+    by capturing `time.perf_counter()` at each baseline function's own entry and threading it
+    into `_make_trace()`, the same pattern `agent.py`'s `run_agent()` already uses. Caught by
+    building the metric that actually reads the number, not by inspecting the field in
+    isolation -- a reminder that a field nobody consumes yet can hide a real bug indefinitely.
+
+55. **evaluate.py runs the CORDON system's traces once, not twice.** First draft computed
+    `evaluate_system("cordon", ...)`'s metrics, then separately re-ran every holdout item
+    through `run_system_on_item("cordon", ...)` again just to get traces for the coverage-risk
+    curve -- doubling CORDON's real Gemini/Ollama call volume on every evaluation run for no
+    reason. Fixed by having `evaluate_system()` return `(metrics, traces)` so the caller reuses
+    what was already computed.
+
+56. **metrics.py: bootstrap CIs resample (y_true, y_pred) together, paired, never
+    independently.** An earlier internal draft considered resampling each array on its own,
+    which would compute a CI for a statistic that no longer corresponds to any real labelling
+    of any real item -- independently shuffling true and predicted labels destroys the very
+    correspondence the metric is supposed to measure. `bootstrap_ci_paired()` draws one set of
+    row indices and applies it to every array, preserving per-item pairing across every
+    resample. BUILD_SPEC.md §9.3's 2000-resample, every-headline-number-has-a-CI requirement is
+    implemented generically here, once, reused by intent macro-F1 and escalation F1 both.
+
+57. **Verified evaluate.py end-to-end against the same 16-item synthetic golden set as
+    calibrate.py (real messages, fake labels, scratchpad only) before trusting it.** All 5
+    systems ran, `RESULTS.md`-shaped output was produced with a real git SHA + timestamp +
+    config hash header, and the missing-`bad_to_autosend` section degraded gracefully
+    (`coverage_curve: null` with a logged reason) instead of crashing the whole report. Intent
+    macro-F1 reads 0.000 for every system in this synthetic run -- expected and correct: the
+    fake labels are a constant `"other"` that none of the five real classifiers happen to
+    predict for these particular real messages, not a metric bug. No real RESULTS.md is
+    committed from this or any run until golden_v1.jsonl exists for real.
