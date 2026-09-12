@@ -506,3 +506,32 @@ tutorial, so the entries that mention a number you measured are worth five that 
     fake labels are a constant `"other"` that none of the five real classifiers happen to
     predict for these particular real messages, not a metric bug. No real RESULTS.md is
     committed from this or any run until golden_v1.jsonl exists for real.
+
+58. **report.py: split into report.py (orchestration) + report_traces_html.py +
+    report_index_html.py, no templating library.** Every other report-writer in this project
+    (sampler.py, index.py, judge_validation.py) builds its markdown output as plain Python
+    strings, no jinja2, despite it being an allowed dependency (CLAUDE.md rule 6) -- kept HTML
+    generation consistent with that precedent rather than introducing templating for this one
+    module. The three-way split matches the taxonomy/agent/llm splits: rendering traces.html
+    and index.html are two genuinely separate jobs sharing only a CSS constant.
+
+59. **report/index.html's charts are hand-rolled inline SVG, not a charting library.**
+    BUILD_SPEC.md §10 says "no CDN," and a bundled JS charting library would need either a CDN
+    or a local copy to manage -- a `_svg_line_chart()` helper (~20 lines: linear-scale two
+    Python closures, a `<polyline>`, some `<circle>`s) covers the coverage-risk curve with zero
+    dependencies and stays inside the "no build step" spirit.
+
+60. **traces.html/index.html sections needing data not yet collected render an explicit "not
+    yet available" state with the exact missing dependency named, mirroring evaluate.py's
+    graceful degradation -- never a fabricated placeholder number.** Coverage-risk curve and
+    cost-sensitivity both need `bad_to_autosend` (docs/ANNOTATION_GUIDE.md §3, not yet
+    collected); judge agreement needs 80 human-scored items (BUILD_SPEC.md §9.4.1, also not yet
+    collected, and no tooling exists yet to collect it -- out of this phase's scope). Verified
+    end-to-end against the same 16-item synthetic golden fixture used for calibrate.py/
+    evaluate.py (scratchpad only, never committed): both pages rendered correctly, HTML
+    escaping held up on real punctuation-heavy tweet text, and a real hard-override case
+    (`unsupported_claim_rate >= 0.8`) is visible in a card's decision reason -- confirming
+    Phase 4's override logic surfaces correctly in the trace viewer. report.py itself still
+    fails loudly (refuses to render anything) if golden_v1.jsonl is missing entirely, same as
+    calibrate.py/evaluate.py -- the distinction is between a foundational input (fail) and an
+    optional section's dependency (degrade that section only).

@@ -1,4 +1,4 @@
-.PHONY: ingest audit taxonomy taxonomy-finalize index playbook sample label agent baselines judge judge-validate calibrate evaluate test
+.PHONY: ingest audit taxonomy taxonomy-finalize index playbook sample label agent baselines judge judge-validate calibrate evaluate report test
 
 export PYTHONPATH := src:.
 
@@ -45,6 +45,9 @@ calibrate:
 
 evaluate:
 	uv run python -m cordon.evaluate
+
+report:
+	uv run python -m cordon.report
 
 test:
 	uv run pytest -v
