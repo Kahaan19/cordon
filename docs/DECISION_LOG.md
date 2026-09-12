@@ -258,3 +258,87 @@ tutorial, so the entries that mention a number you measured are worth five that 
     a fake real-looking tweet ID — so provenance stays unambiguous when this data is read back
     later. `report/sampling_stats.md` states the real/synthetic split plainly rather than
     burying it in an unlabelled total of 15.
+
+34. **Disabled qwen3's thinking mode (`think=False`) for every judge call.** First live Ollama
+    call through `llm.py` (a trivial "say hi in three words") took 56 seconds and returned
+    empty `content` — qwen3 is a hybrid-thinking model that puts its chain-of-thought in a
+    separate `message.thinking` field by default and had spent the entire 1024-token budget
+    thinking without ever reaching an answer. `think=False` (an `ollama` chat-API parameter)
+    drops the same call to 0.5s with `content` correctly populated, and schema-forced JSON
+    (the `supported/unsupported/irrelevant` verdict shape) now works cleanly. Every judge call
+    in this project is a short, structured verdict or rubric score — exactly the case thinking
+    mode doesn't help and actively breaks. Caught before Phase 4's real agent run, not after.
+
+35. **Phase 4's `risk_score` is a real feature vector with a hand-set placeholder weighting,
+    not the fitted model BUILD_SPEC.md §7.4 describes.** `golden_v1.jsonl` is still being
+    hand-labelled — there's no `calib`-split `should_escalate` ground truth to fit a logistic
+    regression against yet. Built all 7 features for real (margin, retrieval similarity,
+    self-consistency, `needs_account_access`, linter violations, unsupported-claim rate,
+    anger/severity), assembled into `RiskScore` with `weights_source: "placeholder"` so nothing
+    downstream can mistake this for a calibrated number. `RISK_PLACEHOLDER_WEIGHTS` and
+    `RISK_DECISION_THRESHOLD_PLACEHOLDER` in `config.py` are hand-set, not fit, and are Phase
+    6b's job once labelling finishes — that phase replaces the weights and threshold, not the
+    feature computation, which is already real.
+
+36. **Self-consistency's 3 T=0.7 draft samples get distinct cache keys via a prompt suffix, not
+    a change to `llm.py`'s cache-key formula.** `complete()`'s cache key is `(model, system,
+    prompt, temperature, max_tokens, schema)` — three identical calls at the same temperature
+    would all hit the same cache entry, silently collapsing "3 samples" into 1 repeated 3x and
+    making the self-consistency signal meaningless. Appending an inert HTML-comment-style
+    marker (`<!-- sample1 -->`) to 2 of the 3 prompts changes their cache key without touching
+    the question being asked, and — critically — doesn't change the cache-key computation
+    itself, so every previously cached call from Phases 2-3 stays valid. Widening the cache key
+    schema instead would have invalidated all of them.
+
+37. **Split Phase 4 across three files: `linter.py` (deterministic checks), `verify.py`
+    (claim-check/self-consistency/risk-score/hard-overrides), `agent.py` (classify/draft/
+    retrieve/orchestration).** Same reasoning as the taxonomy.py/taxonomy_finalize.py split
+    (#26): the combined pipeline passed ~250 lines, and the split tracks real seams — the
+    linter is pure, zero-dependency Python that BUILD_SPEC.md §13 tests in isolation (tests
+    6-9); verify.py's functions are the probabilistic/LLM-touching verification layer; agent.py
+    is just the pipeline that calls all of them in order.
+
+38. **The linter's `missing_signoff` rule only fires when the brand's own voice profile shows
+    signoffs are actually used (`signoff_rate > 0.3`).** BUILD_SPEC.md §7.3(a) states "sign-off
+    present" as an unconditional rule, but hulu_support's measured `signoff_rate` is 0.0 (#32) —
+    enforcing it unconditionally would flag every single draft this agent ever produces for a
+    brand that structurally doesn't sign off with agent initials. The rule is real and will
+    fire correctly for a brand whose voice profile shows real signoff usage; it's parametrized
+    by the brand's own measured voice rather than hard-coded to the spec's illustrative example.
+
+39. **Added a 60-second request timeout to both `llm.py` backends.** The first full 10-message
+    agent run hung for over an hour with ~4 seconds of actual CPU time — a stalled connection
+    (most likely the machine sleeping mid-request) left the process waiting forever with no
+    error, no retry, no progress, because neither `genai.Client` nor `ollama.Client` had an
+    explicit timeout configured. `types.HttpOptions(timeout=60_000)` (milliseconds) for Gemini,
+    `timeout=60` (seconds) for Ollama via its underlying httpx client. A stalled connection now
+    fails loudly within a bounded time instead of hanging indefinitely (rule 10) — Gemini's
+    existing retry loop still applies on top of that for genuinely transient errors.
+
+40. **Claim extraction drops questions.** Inspecting the first real 10-message agent run found
+    the judge scoring identical question phrasing inconsistently across calls — "Which device
+    do you use?" came back `supported` in one trace, `unsupported` in another for the same
+    words. A question has no truth value for evidence to support or contradict; naive
+    sentence-splitting was feeding them to the judge anyway. Filtered questions (sentences
+    ending `?`) out of `extract_claims()`. Left commitment phrases in — "we'll share your
+    feedback," "we'll definitely share your interest" — which scored `unsupported`
+    consistently and correctly (nothing in the retrieved evidence promises that); this is the
+    claim-check catching vague promise-making the linter's narrower regex-based
+    `unbounded_promise` rule doesn't reach, not noise, and a good sign the two checks are
+    complementary rather than redundant.
+
+41. **Added `unsupported_claim_rate >= 0.8` to the hard-override list (BUILD_SPEC.md §7.4).**
+    A real trace (`app_bugs_and_ui_complaints`, draft "Oh no! We'll share your feedback! What
+    device are you streaming from?") had `unsupported_claim_rate=1.00` — the worst grounding
+    failure the pipeline can detect — but scored `risk_score=0.23` under the placeholder
+    weights (`unsupported_claims`' 0.15 weight caps its own contribution at 0.15, so it can't
+    cross the 0.5 threshold alone) and would have auto-sent. Same asymmetric-cost logic as the
+    other hard overrides: a near-fully-hallucinated draft must never auto-send regardless of
+    what the rest of the score says, learned or not. Implemented as `check_claim_override()` in
+    `verify.py`, checked separately from `check_hard_overrides()` because it depends on
+    `claim_check()`'s output and can only be evaluated after drafting, not on the raw message
+    before drafting starts like the other four overrides. `RISK_PLACEHOLDER_WEIGHTS` (0.15 etc.)
+    are left untouched on purpose — Phase 5's `calibrate.py` fits real logistic-regression
+    coefficients on the calib split and replaces them; hand-tuning a number that's about to be
+    refit is wasted effort. The override threshold (0.8) is not part of that fit — it's a hard
+    rule on either side of the placeholder-vs-fitted line, same as the message-based overrides.

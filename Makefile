@@ -1,4 +1,4 @@
-.PHONY: ingest audit taxonomy taxonomy-finalize index playbook sample label test
+.PHONY: ingest audit taxonomy taxonomy-finalize index playbook sample label agent test
 
 export PYTHONPATH := src:.
 
@@ -27,6 +27,9 @@ sample:
 
 label:
 	uv run python -m cordon.labeler
+
+agent:
+	uv run python -m cordon.agent --n 10
 
 test:
 	uv run pytest -v

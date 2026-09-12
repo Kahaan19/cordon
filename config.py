@@ -136,3 +136,31 @@ GOLDEN_N_REDTEAM = 15
 GOLDEN_N_RARE_INTENTS_TO_USE = 4  # "the 4 lowest-frequency intents"
 GOLDEN_N_REFERENCE_REPLY_NATURAL = 40  # docs/ANNOTATION_GUIDE.md §2's 60-item subset
 GOLDEN_N_REFERENCE_REPLY_HARD = 20
+
+# --- agent (Phase 4, BUILD_SPEC.md §7) --------------------------------------
+DRAFT_TEMPERATURE = 0.7
+SELF_CONSISTENCY_SALTS = ["", "sample1", "sample2"]  # distinct cache keys for 3 real samples
+
+# DECISION: risk_score is a real feature vector with a HAND-SET placeholder weighting.
+# Phase 6b fits the actual logistic regression on calib-split human labels and replaces this
+# (BUILD_SPEC.md §7.4) -- these weights and the decision threshold below are not calibrated to
+# anything and must not be quoted as a result. See docs/DECISION_LOG.md.
+RISK_PLACEHOLDER_WEIGHTS = {
+    "margin_uncertainty": 0.15,
+    "retrieval_uncertainty": 0.10,
+    "consistency_uncertainty": 0.15,
+    "needs_account_access": 0.25,
+    "linter_violations": 0.15,
+    "unsupported_claims": 0.15,
+    "anger_severity": 0.05,
+}
+RISK_MAX_LINTER_VIOLATIONS_FOR_NORMALIZATION = 3
+RISK_DECISION_THRESHOLD_PLACEHOLDER = 0.5
+
+# DECISION: hard override, NOT a placeholder -- unlike RISK_PLACEHOLDER_WEIGHTS above, this
+# threshold is never fit by Phase 5's logistic regression. Same asymmetric-cost logic as
+# BUILD_SPEC.md §7.4's other hard overrides (self-harm/legal/PII/injection): a near-fully-
+# ungrounded draft must never auto-send regardless of what the rest of the risk score says.
+# Motivating evidence: a real trace with unsupported_claim_rate=1.00 scored risk=0.23 under the
+# placeholder weights and would have auto-sent. See docs/DECISION_LOG.md #41.
+UNSUPPORTED_CLAIM_OVERRIDE_THRESHOLD = 0.8

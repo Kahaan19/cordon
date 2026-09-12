@@ -23,6 +23,7 @@ from config import GEN_MODEL, JUDGE_MODEL, LLM_CACHE_PATH, OLLAMA_HOST_DEFAULT
 load_dotenv()
 console = Console()
 
+REQUEST_TIMEOUT_MS = 60_000  # a stalled connection must fail loudly, not hang forever (rule 10)
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
@@ -119,7 +120,11 @@ class GeminiBackend:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY not set — required for a live Gemini call")
-        client = genai.Client(api_key=api_key)
+        # DECISION: explicit request timeout -- a stalled connection (e.g. the machine sleeping
+        # mid-request) otherwise hangs forever with no error, no retry, no progress. Observed
+        # directly: a background run sat for over an hour with ~4s of actual CPU time. Fail
+        # loudly instead (rule 10).
+        client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS))
 
         config = types.GenerateContentConfig(temperature=temperature, max_output_tokens=max_tokens,
                                               system_instruction=system or None)
@@ -154,18 +159,29 @@ class GeminiBackend:
 
 
 class OllamaBackend:
-    """Local judge, no key, no rate limit. Requires `ollama pull qwen3:8b` once (SETUP.md)."""
+    """Local judge, no key, no rate limit. Requires `ollama pull qwen3:8b` once (SETUP.md).
+
+    DECISION: qwen3 is a hybrid-thinking model that, left to its defaults, puts its entire
+    chain-of-thought in a separate `message.thinking` field and can burn the whole max_tokens
+    budget on it -- observed empirically: a 3-word request took 56s and returned empty content
+    with 1024/1024 tokens spent thinking. `think=False` disables this: same request drops to
+    0.5s with content correctly populated. Every judge call here is a short, structured
+    verdict (supported/unsupported/irrelevant, a rubric score) -- exactly the case thinking
+    mode doesn't help and actively breaks schema-forced JSON output. See docs/DECISION_LOG.md.
+    """
 
     def generate(self, prompt: str, system: str, temperature: float, max_tokens: int,
                  schema: dict | None, model: str) -> tuple[str, dict | None, int, int]:
         import ollama
 
-        client = ollama.Client(host=os.environ.get("OLLAMA_HOST", OLLAMA_HOST_DEFAULT))
+        client = ollama.Client(host=os.environ.get("OLLAMA_HOST", OLLAMA_HOST_DEFAULT),
+                                timeout=REQUEST_TIMEOUT_MS / 1000)
         messages = [{"role": "system", "content": system}] if system else []
         messages.append({"role": "user", "content": prompt})
         response = client.chat(
             model=model,
             messages=messages,
+            think=False,
             format=schema if schema is not None else None,
             options={"temperature": temperature, "num_predict": max_tokens},
         )
