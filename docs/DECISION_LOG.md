@@ -342,3 +342,25 @@ tutorial, so the entries that mention a number you measured are worth five that 
     coefficients on the calib split and replaces them; hand-tuning a number that's about to be
     refit is wasted effort. The override threshold (0.8) is not part of that fit — it's a hard
     rule on either side of the placeholder-vs-fitted line, same as the message-based overrides.
+
+42. **Added a `fabricated_url` linter rule after B2 invented a plausible-looking support URL.**
+    Running the real B2 baseline (Phase 5) on a "Hulu on the Wii" complaint produced: "checking
+    out our currently supported devices here: http://hulu.com/support/articles/200730109" — a
+    literal URL, not the `<url>` placeholder token the existing `url_not_in_evidence` check
+    looks for, so it slipped through uncaught. But `ingest.py`'s `clean_text()` always masks
+    real URLs to `<url>` — every evidence source (retrieved replies, playbooks) is built from
+    that cleaned corpus and can therefore never contain a literal URL. That makes any literal
+    `http(s)://` in a draft fabricated by construction, unconditionally — no evidence
+    comparison needed, unlike `url_not_in_evidence`. Added as its own violation code so the two
+    stay distinguishable in reporting. Applies to every system through the shared `lint_draft()`
+    call, CORDON included, not just B2.
+
+43. **baselines.py: B0a/B0b (majority intent + most common real deflection reply), B1 (TF-IDF +
+    logistic regression, nearest-neighbour reply, escalate-below-median-similarity), B2 (one
+    fair generator call) — all through the identical `Trace` schema as `agent.py`.** B1's median
+    similarity threshold (0.454) is fit on the calib split via cosine similarity alone — no
+    human labels needed, so nothing here waits on `golden_v1.jsonl`. Ran all four on the same
+    10 demo messages as Phase 4's agent run: B2's failures are exactly the honest, expected
+    ones — inventing a specific, unevidenced policy ("episodes typically become available the
+    day after they air") and the fabricated URL above — while B0a/B0b's constant deflection
+    reply is real, mined from the pool (`"Can you DM us more info?..."`), not synthesized.

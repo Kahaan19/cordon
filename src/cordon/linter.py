@@ -24,6 +24,7 @@ PROMISE_WITHIN_RE = re.compile(r"\bwithin \d+ (hour|hours|day|days)\b", re.IGNOR
 PROMISE_REFUND_FUTURE_RE = re.compile(r"\brefund\b.{0,20}\b(will|going to|shall)\b", re.IGNORECASE)
 PROMISE_GUARANTEE_RE = re.compile(r"\bguarantee\b", re.IGNORECASE)
 URL_TOKEN = "<url>"
+LITERAL_URL_RE = re.compile(r"https?://", re.IGNORECASE)
 HANDLE_RE = re.compile(r"@\w+")
 
 
@@ -41,6 +42,14 @@ def lint_draft(draft: str, evidence_text: str, voice_profile: dict) -> list[str]
         violations.append("unbounded_promise")
     if URL_TOKEN in draft and URL_TOKEN not in evidence_text:
         violations.append("url_not_in_evidence")
+    if LITERAL_URL_RE.search(draft):
+        # DECISION: ingest.py's clean_text() always masks real URLs to <url> -- evidence text
+        # (retrieved replies, playbooks) is built entirely from that cleaned corpus and can
+        # therefore never contain a literal http(s):// URL. Any literal URL in a draft is
+        # fabricated by construction, unconditionally, not just "absent from this evidence
+        # block". Caught in a real B2 baseline output: a plausible-looking but invented support
+        # URL. See docs/DECISION_LOG.md.
+        violations.append("fabricated_url")
     if set(HANDLE_RE.findall(draft)) - {"@user"}:
         violations.append("unauthorized_handle")
     return violations

@@ -47,3 +47,16 @@ def test_unauthorized_handle_violation():
     assert "unauthorized_handle" in lint_draft(draft, evidence_text="", voice_profile=VOICE_NO_SIGNOFF)
     clean = "Hi @user, thanks for reaching out!"
     assert "unauthorized_handle" not in lint_draft(clean, evidence_text="", voice_profile=VOICE_NO_SIGNOFF)
+
+
+def test_fabricated_literal_url_violation():
+    """A real B2 baseline output invented a plausible-looking support URL. Since ingest.py's
+    clean_text() always masks real URLs to <url>, evidence can never contain a literal URL --
+    so any literal http(s):// in a draft is fabricated, even if it happens to match the
+    <url>-in-evidence check."""
+    draft = "Check our supported devices here: http://hulu.com/support/articles/200730109"
+    assert "fabricated_url" in lint_draft(draft, evidence_text="<url> lists supported devices",
+                                           voice_profile=VOICE_NO_SIGNOFF)
+    clean = "Check our supported devices here: <url>"
+    assert "fabricated_url" not in lint_draft(clean, evidence_text="<url> lists supported devices",
+                                               voice_profile=VOICE_NO_SIGNOFF)
