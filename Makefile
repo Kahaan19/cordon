@@ -1,4 +1,4 @@
-.PHONY: ingest audit taxonomy taxonomy-finalize index playbook sample label agent baselines test
+.PHONY: ingest audit taxonomy taxonomy-finalize index playbook sample label agent baselines judge judge-validate test
 
 export PYTHONPATH := src:.
 
@@ -33,6 +33,12 @@ agent:
 
 baselines:
 	uv run python -m cordon.baselines --n 10
+
+judge:
+	uv run python -m cordon.judge
+
+judge-validate:
+	uv run python -m cordon.judge_validation
 
 test:
 	uv run pytest -v

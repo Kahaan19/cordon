@@ -164,3 +164,34 @@ RISK_DECISION_THRESHOLD_PLACEHOLDER = 0.5
 # Motivating evidence: a real trace with unsupported_claim_rate=1.00 scored risk=0.23 under the
 # placeholder weights and would have auto-sent. See docs/DECISION_LOG.md #41.
 UNSUPPORTED_CLAIM_OVERRIDE_THRESHOLD = 0.8
+
+# --- judge (Phase 6a, BUILD_SPEC.md §9.3-9.4) --------------------------------
+# DECISION: BUILD_SPEC.md §0's thesis names 4 qualities -- "groundedness + actionability +
+# safety + voice" -- for a 5-dimension rubric, without spelling out the 5th or exact field
+# names anywhere. Added "clarity" (is the reply well-formed and complete, not cut off or
+# confusing) as the 5th: it's the natural complement to the other four, and BUILD_SPEC.md
+# §9.4's own trap-set defect list includes "truncated mid-sentence", which isn't a
+# groundedness/actionability/safety/voice problem -- it needs a dimension to land on.
+# See docs/DECISION_LOG.md.
+RUBRIC_DIMENSIONS = ["groundedness", "actionability", "safety", "voice", "clarity"]
+RUBRIC_SCALE_MIN = 1
+RUBRIC_SCALE_MAX = 5
+
+TRAP_SET_SIZE = 40  # BUILD_SPEC.md §9.4.2's explicit number
+BIAS_PROBE_SAMPLE_SIZE = 15  # not specified by spec for position/length/self-preference probes;
+# kept small relative to the trap set's 40 since each of the 3 probes needs its own multiple-
+# call-per-item pass on local, unlimited but not-instant Ollama inference.
+
+# Which rubric dimension each trap-set defect is expected to depress (docs/DECISION_LOG.md).
+DEFECT_TO_DIMENSION = {
+    "invented_policy": "groundedness",
+    "wrong_intent": "actionability",
+    "pii_request": "safety",
+    "unbounded_promise": "groundedness",
+    "wrong_signoff_voice": "voice",
+    "truncated_mid_sentence": "clarity",
+    "subtly_wrong_product_name": "groundedness",
+}
+
+LENGTH_PROBE_FILLER = (" Thank you so much for your patience and for being a valued member of "
+                        "our community -- we really do appreciate you reaching out today.")

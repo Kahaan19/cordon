@@ -364,3 +364,58 @@ tutorial, so the entries that mention a number you measured are worth five that 
     ones — inventing a specific, unevidenced policy ("episodes typically become available the
     day after they air") and the fabricated URL above — while B0a/B0b's constant deflection
     reply is real, mined from the pool (`"Can you DM us more info?..."`), not synthesized.
+
+44. **Picked "clarity" as the judge rubric's 5th dimension.** BUILD_SPEC.md §0's thesis names
+    four qualities — groundedness, actionability, safety, voice — for a "5-dimension rubric"
+    without naming the 5th anywhere. `clarity` is the natural complement, and §9.4.2's own
+    trap-set defect list includes "truncated mid-sentence," which isn't a groundedness/
+    actionability/safety/voice problem — it needs a dimension to land on, and it does
+    (`truncated_mid_sentence` detection: 90%, the trap set's strongest result).
+
+45. **Judge trap set (n=40, real substantive replies from the retrieval index, deterministic
+    defect injection) — full per-defect detection rates:**
+
+    | defect | dimension checked | detection rate |
+    |---|---|---|
+    | truncated_mid_sentence | clarity | 90% |
+    | pii_request | safety | 80% |
+    | subtly_wrong_product_name | groundedness | 72% |
+    | invented_policy | groundedness | 70% |
+    | wrong_intent | actionability | 52% |
+    | unbounded_promise | groundedness | 42% |
+    | wrong_signoff_voice | voice | 42% |
+
+    Trust `clarity` and `safety` scores; treat `voice` and the groundedness-via-
+    `unbounded_promise` signal specifically as closer to decorative — the judge catches an
+    *invented policy* 70% of the time but a vague *promise* only 42%, even though both are
+    grounding failures by the same rubric dimension. "Detected" means the mapped dimension
+    scored strictly lower on the defective copy than the original — this tests the actual
+    production rubric, not a separate classifier nobody else uses.
+
+46. **Position-bias probe: 67% flip rate.** Swapping which side (A/B) the same two replies
+    appear on changed the pairwise winner two-thirds of the time on a 15-item sample. This is a
+    real, serious finding, not swept under the rug: `compare_pair()`'s pairwise mode is not
+    reliable enough on its own to trust for anything — a report using pairwise judge verdicts
+    (e.g. the §9.3 blind pairwise win-rate framing) must randomize and average over both
+    orderings per item, never read a single-order verdict as ground truth. The 5-dimension
+    rubric (`score_reply`) doesn't have this specific failure mode since it scores one reply
+    at a time with no ordering to be biased by.
+
+47. **Length-bias probe: harmless filler inflated every score except safety.** Padding a real
+    reply with a content-free pleasantry (docs/DECISION_LOG.md config `LENGTH_PROBE_FILLER`)
+    moved scores by +0.87 (groundedness), +0.87 (actionability), +0.73 (voice), +0.80
+    (clarity), +0.00 (safety) on a 1-5 scale, averaged over 15 items — a large, systematic
+    "longer sounds better" bias affecting every dimension that isn't a hard safety check.
+    Any headline number built from absolute rubric scores should note this: two replies that
+    differ only in padding will not score equally, and the judge cannot be trusted to normalize
+    for length on its own.
+
+48. **Self-preference probe: no inflation — if anything, the opposite.** The judge (qwen3),
+    blind-scoring its own drafts vs. the brand's real historical replies vs. B1's copied
+    replies (15-item sample): qwen_draft=3.80, real_reply=4.03, b1_copied=4.03. The judge rated
+    its own generated text *lower* than authentic replies, not higher — no same-family
+    self-preference bias observed in this cross-family setup (qwen3 judge, Gemini generator;
+    this probe additionally has qwen3 act as a one-off drafter purely to test the judge against
+    its own model family, per BUILD_SPEC.md §9.4.3c). Worth stating plainly since it's the
+    reassuring result: this specific bias, which the project's cross-family design (§2) exists
+    to guard against, doesn't show up here.
