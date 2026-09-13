@@ -1,8 +1,8 @@
 # Golden set sampling stats
 
-- **natural**: 120 / 120 target
-- **rare_intent**: 40 / 40 target
-- **hard**: 25 / 25 target
+- **natural**: 50 / 50 target
+- **rare_intent**: 20 / 20 target
+- **hard**: 20 / 20 target
 - **redteam**: 15 / 15 target
 
 Rare intents chosen (4 lowest-frequency per weak TF-IDF classifier): account_login_access, app_bugs_and_ui_complaints, customer_service_complaint, subscription_billing_refund

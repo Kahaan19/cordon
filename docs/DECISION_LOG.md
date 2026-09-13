@@ -594,3 +594,38 @@ tutorial, so the entries that mention a number you measured are worth five that 
     trusting any further output from this tool. Recorded here rather than silently fixed and
     moved past, because a near-miss on a committed-artifact boundary is exactly the kind of
     thing worth being honest about even when it didn't land.
+
+66. **Golden set scaled 200 -> 105 items (natural 120->50, rare_intent 40->20, hard 25->20,
+    redteam unchanged at 15) -- this is the decision itself; #62's mention of "~105-item golden
+    set" was only a premise inherited from the user for the (separate, proposed-not-applied)
+    judge-agreement scaling, not a record of this resize.** Reason: time-constrained
+    hand-labelling scope for a take-home -- 105 is still enough for a stratified fit
+    (`GOLDEN_FIT_FRACTION` split) plus a held-out evaluation slice per stratum, at roughly half
+    the labelling hours. `config.py`'s `GOLDEN_N_*` constants updated; `sampler.py` rerun
+    unmodified (only pool size/composition changed, no sampling-logic edits) and regenerated
+    the real, committed `data/golden/sampled_items.jsonl` at exactly 105 items matching the
+    target breakdown (verified by direct count, not just the script's own log line). Flagging,
+    not silently resolving: `GOLDEN_N_REFERENCE_REPLY_NATURAL=40` and
+    `GOLDEN_N_REFERENCE_REPLY_HARD=20` (the reference-reply subset sizes from
+    `docs/ANNOTATION_GUIDE.md` §2) were left untouched since the user didn't ask about them, but
+    against the new strata (natural=50, hard=20) they now mean 40/50 natural items and all
+    20/20 hard items need a blind reference reply typed before the brand's real reply is
+    revealed -- worth a deliberate call before `make label` gets there, not an assumption baked
+    in here.
+
+67. **`GOLDEN_N_REFERENCE_REPLY_NATURAL` and `GOLDEN_N_REFERENCE_REPLY_HARD` set to 0 for this
+    labelling pass -- a deliberate deferral, not a cut.** #66 flagged that the resized strata
+    would push blind reference-reply typing onto 40/50 natural + all 20/20 hard items; the user
+    chose to defer that data collection entirely rather than pay it now, so every item in this
+    pass goes through the same fast 7-field flow (intent, secondary_intent,
+    needs_account_access, severity, anger, contains_pii, should_escalate[+reason]) with no
+    branch into the blind-reply/brand-score prompts. `sampler.py` was rerun unmodified (only
+    the two constants changed) and the regenerated `data/golden/sampled_items.jsonl` was
+    verified to have zero items with `needs_reference_reply == True`. Consequence: the
+    human-reference-reply data that feeds the brand-reply-quality comparison and the blind
+    pairwise win-rate metric (BUILD_SPEC.md's reference-reply comparison) is NOT collected in
+    this pass -- those metrics are blocked until it exists. Recovery path when there's time: set
+    `GOLDEN_N_REFERENCE_REPLY_NATURAL`/`_HARD` back to small positive numbers (e.g. 10 total),
+    rerun `sampler.py` against a small subsample of already-labelled items, and run the labeler
+    again on just that subsample to backfill `human_reference_reply`/`brand_reply_score`
+    without relabelling the other 7 fields.

@@ -129,13 +129,16 @@ VOICE_PROFILE_SAMPLE_SIZE = 300
 ABLATIONS = ["retrieval", "linter", "self_consistency", "conformal"]
 
 # --- golden set sampling (BUILD_SPEC.md §9.1 / docs/ANNOTATION_GUIDE.md §1) -
-GOLDEN_N_NATURAL = 120
-GOLDEN_N_RARE_INTENT = 40
-GOLDEN_N_HARD = 25
+# DECISION: scaled 200 -> 105 items (time-constrained hand-labelling scope), same stratified
+# shape, redteam untouched. See docs/DECISION_LOG.md.
+GOLDEN_N_NATURAL = 50
+GOLDEN_N_RARE_INTENT = 20
+GOLDEN_N_HARD = 20
 GOLDEN_N_REDTEAM = 15
 GOLDEN_N_RARE_INTENTS_TO_USE = 4  # "the 4 lowest-frequency intents"
-GOLDEN_N_REFERENCE_REPLY_NATURAL = 40  # docs/ANNOTATION_GUIDE.md §2's 60-item subset
-GOLDEN_N_REFERENCE_REPLY_HARD = 20
+# DECISION: 0 for this pass -- deliberate deferral, not a cut. See docs/DECISION_LOG.md.
+GOLDEN_N_REFERENCE_REPLY_NATURAL = 0
+GOLDEN_N_REFERENCE_REPLY_HARD = 0
 
 # --- agent (Phase 4, BUILD_SPEC.md §7) --------------------------------------
 DRAFT_TEMPERATURE = 0.7
