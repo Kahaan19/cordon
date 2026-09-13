@@ -212,3 +212,15 @@ CLOPPER_PEARSON_MIN_N = 20  # choose_threshold refuses to certify on thinner evi
 
 BOOTSTRAP_N_RESAMPLES = 2000  # BUILD_SPEC.md §9.3
 BOOTSTRAP_CI = 0.95
+
+# --- bad_to_autosend (BUILD_SPEC.md §8, docs/ANNOTATION_GUIDE.md §3) --------
+# DECISION: B0a's constant deflection template is content-safe on every bad_to_autosend axis
+# except "answered a message that needed a human" -- verified against the real, deterministic
+# template ("Can you DM us more info?..."): linter clean except a url_not_in_evidence artifact
+# from a real (not fabricated) historical link; no PII-request pattern; no promise pattern;
+# the judge itself scores its one non-question claim "supported" even against zero evidence.
+# So bad_to_autosend(b0a, item) == should_escalate(item) exactly -- derived automatically, never
+# sent to the human labeller. B0b always escalates (0% coverage by design) so it contributes
+# zero auto-handled drafts to label, mechanically, not via a similar derivation. See
+# docs/DECISION_LOG.md.
+BAD_TO_AUTOSEND_DERIVED_SYSTEMS = ["b0a"]

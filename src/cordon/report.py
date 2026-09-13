@@ -91,8 +91,10 @@ def main() -> None:
     coverage_curve, cost_sensitivity = None, None
     bad_labels_path = Path(args.bad_labels)
     if bad_labels_path.exists():
+        # DECISION: bad_to_autosend_v1.jsonl carries rows for all 5 systems (docs/DECISION_LOG.md)
+        # -- filter to this system's own rows, or item_ids shared across systems silently collide.
         bad_labels = {r["item_id"]: r["bad_to_autosend"] for r in
-                      (json.loads(line) for line in open(bad_labels_path))}
+                      (json.loads(line) for line in open(bad_labels_path)) if r["system"] == "cordon"}
         scores = np.array([r["trace"].risk_score.score if r["trace"].risk_score else 1.0
                             for r in records])
         is_bad = np.array([bad_labels.get(r["item"]["item_id"], False) for r in records])

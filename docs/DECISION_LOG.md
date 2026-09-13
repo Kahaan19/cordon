@@ -535,3 +535,62 @@ tutorial, so the entries that mention a number you measured are worth five that 
     fails loudly (refuses to render anything) if golden_v1.jsonl is missing entirely, same as
     calibrate.py/evaluate.py -- the distinction is between a foundational input (fail) and an
     optional section's dependency (degrade that section only).
+
+61. **B0a's bad_to_autosend is derived from should_escalate, never sent to a human labeller --
+    verified against the real, deterministic deflection template, not assumed.** Ran the real
+    template ("Can you DM us more info? Let us know the show you're watching...") through the
+    actual linter and claim-check: `PII_REQUEST_RE`/promise patterns both `False`; the linter's
+    only violation is `url_not_in_evidence`, an artifact of passing empty evidence to a
+    baseline with no retrieval mechanism, not a fabricated link (the `<url>` is a real token
+    from the real historical reply this template was drawn from); `claim_check` with *zero*
+    evidence still scores the template's one non-question claim `supported`, because it's a
+    request for information, not a factual assertion. Since the template is fixed across every
+    item, every content-based `bad_to_autosend` criterion (unsupported / unsafe / PII / broken
+    promise) is a constant, checked once here -- the only criterion left that varies per item
+    is "answered a message that needed a human," which is exactly `should_escalate`. So
+    `bad_to_autosend(b0a, item) == should_escalate(item)`, derived automatically
+    (`config.BAD_TO_AUTOSEND_DERIVED_SYSTEMS`). B0b needs no labels either, but for a
+    structurally different reason: it always escalates by design, so it has zero auto-handled
+    drafts, mechanically, not via a content argument.
+
+62. **Proposed cut, not applied: scale the judge-agreement sample from 80 to roughly 40 to
+    match the reduced ~105-item golden set.** BUILD_SPEC.md §9.4.1's 80-item figure was sized
+    against the full 200-item golden set (80/200 = 40%); scaling the same proportion to ~105
+    items gives ~42, which is where "roughly 40" comes from. Flagging this rather than baking a
+    new sample-size constant into config.py, because the 80-item judge-agreement collection
+    tool doesn't exist yet at all (a real, separate gap from bad_to_autosend, noted back in
+    Phase 6a) -- there's nothing to silently resize today. Whoever builds that tool should
+    treat 40 as the working number unless told otherwise, but shouldn't inherit it as an
+    unexamined default either.
+
+63. **Found and fixed a real correctness bug while building the sampler: the labelling-queue
+    filter used CORDON's placeholder-threshold decision ("auto" at today's 0.5) instead of
+    "not hard-overridden."** `calibrate.py`'s `choose_threshold` sweeps tau over CORDON's
+    *entire* observed score range, not just the subset currently `decision=="auto"` -- for any
+    swept tau above 0.5, the "would-be-auto" set includes items the real run actually
+    escalated, which had no `bad_to_autosend` label under the original (auto-only) filter. Left
+    unfixed, the sweep would have silently lacked ground truth for every candidate threshold
+    above today's placeholder, undermining the coverage-risk curve without any error ever
+    firing. Fixed via `_needs_label()`: for `system == "cordon"`, include any item where
+    `risk_score is not None` (i.e., not hard-overridden), regardless of today's decision;
+    baselines keep the narrower `decision == "auto"` filter, since none of them have a threshold
+    that gets swept anywhere in this codebase. The counts report now shows both numbers
+    ("auto-handled (today's policy)" vs. "needs a label") since they now legitimately differ
+    for cordon, so this isn't a silent surprise later.
+
+64. **calibrate.py now fails with a specific, actionable error if `bad_to_autosend_v1.jsonl`
+    exists but doesn't yet cover every holdout item cordon needs -- not a bare `KeyError`.**
+    Discovered this gap by actually walking the real workflow: label some items, try to run
+    calibrate.py before finishing, watch it crash. The file-entirely-missing case already had a
+    clear message; a partially-labelled file deserves the same treatment, since it's the
+    expected state for most of the time a human is actually working through the queue.
+
+65. **Caught my own near-miss: a verification run against the synthetic fixture wrote its
+    counts report to the real, committed `report/` path, because `main()` didn't expose a flag
+    for it and the test command didn't override the default.** The file was untracked and never
+    staged, so nothing was actually committed, but this is exactly the mistake the user's
+    explicit "never committed" constraint was guarding against. Added `--counts-out` to
+    `bad_to_autosend_sampler.py`'s CLI and re-verified with it pointed at scratchpad before
+    trusting any further output from this tool. Recorded here rather than silently fixed and
+    moved past, because a near-miss on a committed-artifact boundary is exactly the kind of
+    thing worth being honest about even when it didn't land.

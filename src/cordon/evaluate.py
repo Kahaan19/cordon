@@ -132,8 +132,10 @@ def coverage_curve_or_none(cordon_traces: list, items: list[dict], bad_labels_pa
                      "(needs bad_to_autosend, a separate blind pass per "
                      "docs/ANNOTATION_GUIDE.md §3).[/yellow]")
         return None
+    # DECISION: bad_to_autosend_v1.jsonl carries rows for all 5 systems (docs/DECISION_LOG.md) --
+    # filter to this system's own rows, or item_ids shared across systems silently collide.
     bad_labels = {r["item_id"]: r["bad_to_autosend"] for r in
-                  (json.loads(line) for line in open(bad_labels_path))}
+                  (json.loads(line) for line in open(bad_labels_path)) if r["system"] == "cordon"}
     scores = np.array([t.risk_score.score if t.risk_score else 1.0 for t in cordon_traces])
     is_bad = np.array([bad_labels.get(i["item_id"], False) for i in items])
     return coverage_at_alphas(["auto" if s <= 0.5 else "escalate" for s in scores], is_bad,

@@ -143,10 +143,20 @@ def main() -> None:
             "docs/ANNOTATION_GUIDE.md §3. This is not approximated from should_escalate; "
             "collect it, then rerun."
         )
+    # DECISION: bad_to_autosend_v1.jsonl carries rows for all 5 systems (docs/DECISION_LOG.md) --
+    # filter to this system's own rows, or item_ids shared across systems silently collide.
     bad_labels = {r["item_id"]: r["bad_to_autosend"] for r in
-                  (json.loads(line) for line in open(bad_labels_path))}
+                  (json.loads(line) for line in open(bad_labels_path)) if r["system"] == "cordon"}
     holdout_features, _, holdout_kept = compute_features_and_labels(holdout_items, index,
                                                                       taxonomy_text, args.brand)
+    missing = [i["item_id"] for i in holdout_kept if i["item_id"] not in bad_labels]
+    if missing:
+        raise KeyError(
+            f"{bad_labels_path} exists but is missing cordon's bad_to_autosend label for "
+            f"{len(missing)} holdout item(s): {missing[:5]}{'...' if len(missing) > 5 else ''}. "
+            "Labelling is incomplete -- finish `python -m cordon.bad_to_autosend_labeler`, "
+            "then rerun."
+        )
     holdout_scores = model.predict_proba(holdout_features)[:, 1]
     holdout_is_bad = np.array([bad_labels[i["item_id"]] for i in holdout_kept])
     curve = coverage_risk_curve(holdout_scores, holdout_is_bad)
